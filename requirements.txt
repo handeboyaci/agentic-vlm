@@ -1,0 +1,10 @@
+torch
+torch-geometric
+rdkit
+pandas
+numpy
+requests
+chromadb
+sentence-transformers
+openai
+google-generativeai
