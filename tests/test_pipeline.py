@@ -21,17 +21,18 @@ def test_pipeline_runs_without_error() -> None:
     ),
     max_feedback_rounds=1,
   )
-  results = pipeline.run(
+  results, target = pipeline.run(
     disease_name="Alzheimer's",
     initial_smiles=SMALL_LIBRARY,
     generations=1,
   )
   assert isinstance(results, list)
+  assert isinstance(target, dict)
 
 
 def test_pipeline_result_structure() -> None:
   pipeline = DrugDiscoveryPipeline(max_feedback_rounds=1)
-  results = pipeline.run(
+  results, target = pipeline.run(
     disease_name="Cancer",
     initial_smiles=SMALL_LIBRARY,
     generations=1,
@@ -44,7 +45,7 @@ def test_pipeline_result_structure() -> None:
 
 def test_pipeline_empty_library() -> None:
   pipeline = DrugDiscoveryPipeline()
-  results = pipeline.run(
+  results, _ = pipeline.run(
     disease_name="Diabetes",
     initial_smiles=[],
     generations=1,
@@ -54,7 +55,7 @@ def test_pipeline_empty_library() -> None:
 
 def test_pipeline_invalid_smiles_only() -> None:
   pipeline = DrugDiscoveryPipeline()
-  results = pipeline.run(
+  results, _ = pipeline.run(
     disease_name="Cancer",
     initial_smiles=["NotASmiles", "AlsoInvalid"],
     generations=1,

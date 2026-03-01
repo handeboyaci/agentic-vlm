@@ -41,7 +41,8 @@ class DrugDiscoveryPipeline:
     
     # 2. Chemist: filtering
     mols = self.chemist_agent.execute(initial_smiles, constraints)
-    if not mols: return []
+    if not mols:
+      return [], target
     
     all_results = []
     population = mols
@@ -88,30 +89,77 @@ class DrugDiscoveryPipeline:
           prev_fitness.append(u.get("pka_mean", 0.0))
       if not population: break
 
-    all_results.sort(key=lambda r: r.get("pka_mean", 0), reverse=True)
-    return all_results
+    all_results.sort(
+      key=lambda r: r.get("pka_mean", 0), reverse=True,
+    )
+    return all_results, target
 
 if __name__ == "__main__":
-  logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)-8s  %(message)s", stream=sys.stdout)
-  parser = argparse.ArgumentParser(description="Virtual Lab Manager Pipeline")
-  parser.add_argument("--disease", type=str, default="Alzheimer's")
+  import json
+
+  logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s  %(levelname)-8s  %(message)s",
+    stream=sys.stdout,
+  )
+  parser = argparse.ArgumentParser(
+    description="Virtual Lab Manager Pipeline",
+  )
+  parser.add_argument(
+    "--disease", type=str, default="Alzheimer's",
+  )
   parser.add_argument("--generations", type=int, default=5)
   parser.add_argument("--pop_size", type=int, default=10)
   parser.add_argument("--rounds", type=int, default=2)
+  parser.add_argument(
+    "--output", type=str, default=None,
+    help="Path to save results as JSON",
+  )
   args = parser.parse_args()
 
   SMALL_LIBRARY = [
-    "CC(=O)OC1=CC=CC=C1C(=O)O", "CN1C=NC2=C1C(=O)N(C(=O)N2C)C",
-    "CC(C)Cc1ccc(cc1)[C@@H](C)C(=O)O", "COCc1cc(C(=O)Nc2ccc(cc2F)OCC3CC3)c(C)n1",
+    "CC(=O)OC1=CC=CC=C1C(=O)O",
+    "CN1C=NC2=C1C(=O)N(C(=O)N2C)C",
+    "CC(C)Cc1ccc(cc1)[C@@H](C)C(=O)O",
+    "COCc1cc(C(=O)Nc2ccc(cc2F)OCC3CC3)c(C)n1",
   ]
-  
+
   pipeline = DrugDiscoveryPipeline(
-    architect_config=ArchitectConfig(population_size=args.pop_size, top_k_survivors=max(2, args.pop_size//5)),
-    max_feedback_rounds=args.rounds
+    architect_config=ArchitectConfig(
+      population_size=args.pop_size,
+      top_k_survivors=max(2, args.pop_size // 5),
+    ),
+    max_feedback_rounds=args.rounds,
   )
-  results = pipeline.run(disease_name=args.disease, initial_smiles=SMALL_LIBRARY, generations=args.generations)
-  
+  results, target = pipeline.run(
+    disease_name=args.disease,
+    initial_smiles=SMALL_LIBRARY,
+    generations=args.generations,
+  )
+
   print("\nTop Results for", args.disease)
   for i, r in enumerate(results[:5]):
     badge = "✅" if r.get("confident") else "⚠️"
-    print(f"{i+1}. {r['smiles']} | pKa: {r.get('pka_mean',0):.2f} {badge}")
+    print(
+      f"{i+1}. {r['smiles']}"
+      f" | pKa: {r.get('pka_mean', 0):.2f} {badge}"
+    )
+
+  if args.output:
+    # Strip non-serialisable mol objects
+    serialisable = []
+    for r in results:
+      row = {k: v for k, v in r.items() if k != "mol"}
+      serialisable.append(row)
+    output = {
+      "disease": args.disease,
+      "target": {
+        k: v for k, v in target.items()
+        if isinstance(v, (str, int, float, list, bool))
+      },
+      "candidates": serialisable,
+    }
+    with open(args.output, "w") as f:
+      json.dump(output, f, indent=2)
+    print(f"\nResults saved to {args.output}")
+
