@@ -15,7 +15,8 @@ from config.settings import ArchitectConfig, ChemistConfig, PhysicistConfig, Pre
 logger = logging.getLogger(__name__)
 
 class DrugDiscoveryPipeline:
-  """Orchestrates the full drug discovery workflow with uncertainty feedback."""
+  """Orchestrates the full drug discovery workflow."""
+
   def __init__(
     self,
     chemist_config: Optional[ChemistConfig] = None,
@@ -24,12 +25,22 @@ class DrugDiscoveryPipeline:
     predictor_config: Optional[PredictorConfig] = None,
     scout_config: Optional[ScoutConfig] = None,
     max_feedback_rounds: int = 3,
+    scoring: str = "gnn",
   ) -> None:
     self.scout_agent = ScoutAgent(scout_config or ScoutConfig())
-    self.chemist_agent = ChemistAgent(chemist_config or ChemistConfig())
-    self.architect_agent = ArchitectAgent(architect_config or ArchitectConfig())
-    self.physicist_agent = PhysicistAgent(physicist_config or PhysicistConfig())
-    self.predictor_agent = PredictorAgent(predictor_config or PredictorConfig())
+    self.chemist_agent = ChemistAgent(
+      chemist_config or ChemistConfig(),
+    )
+    self.architect_agent = ArchitectAgent(
+      architect_config or ArchitectConfig(),
+    )
+    self.physicist_agent = PhysicistAgent(
+      physicist_config or PhysicistConfig(),
+    )
+    self.predictor_agent = PredictorAgent(
+      predictor_config or PredictorConfig(),
+      scoring=scoring,
+    )
     self.max_feedback_rounds = max_feedback_rounds
 
   def run(self, disease_name: str, initial_smiles: list, generations: int = 5) -> list[dict[str, Any]]:
@@ -112,6 +123,11 @@ if __name__ == "__main__":
   parser.add_argument("--pop_size", type=int, default=10)
   parser.add_argument("--rounds", type=int, default=2)
   parser.add_argument(
+    "--scoring", type=str, default="gnn",
+    choices=["gnn", "unimol", "vina"],
+    help="Scoring backend: gnn (default), unimol, or vina",
+  )
+  parser.add_argument(
     "--output", type=str, default=None,
     help="Path to save results as JSON",
   )
@@ -130,6 +146,7 @@ if __name__ == "__main__":
       top_k_survivors=max(2, args.pop_size // 5),
     ),
     max_feedback_rounds=args.rounds,
+    scoring=args.scoring,
   )
   results, target = pipeline.run(
     disease_name=args.disease,
