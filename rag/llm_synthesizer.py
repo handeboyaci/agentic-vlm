@@ -20,11 +20,25 @@ Return a minified JSON object with these keys:
 def _synthesise_fallback(disease: str, documents: list[dict[str, Any]]) -> dict[str, Any]:
   text = " ".join([d["text"] for d in documents]).lower()
   location = "CNS" if any(k in disease.lower() or k in text for k in ["alzheimer", "brain", "cns", "neuron"]) else "Systemic"
-  targets = {"alzheimer": "BACE1", "cancer": "EGFR", "covid": "MPro"}
+  targets = {
+    "alzheimer": ("BACE1", "4B7R"),
+    "cancer": ("EGFR", "1M17"),
+    "covid": ("MPro", "6LU7"),
+  }
   name = "Unknown"
-  for k, v in targets.items():
-    if k in disease.lower(): name = v
-  return {"target_name": name, "uniprot": "", "pdb_id": "", "location": location, "known_inhibitors": [], "rationale": "Keyword-based fallback identification."}
+  pdb = ""
+  for k, (v, p) in targets.items():
+    if k in disease.lower():
+      name = v
+      pdb = p
+  return {
+    "target_name": name, 
+    "uniprot": "", 
+    "pdb_id": pdb, 
+    "location": location, 
+    "known_inhibitors": [], 
+    "rationale": "Keyword-based fallback identification.",
+  }
 
 def _synthesise_with_gemini(disease: str, context: str) -> Optional[dict[str, Any]]:
   api_key = os.environ.get("GOOGLE_API_KEY")

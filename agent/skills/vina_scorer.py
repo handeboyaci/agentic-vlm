@@ -68,10 +68,13 @@ def _prepare_receptor(pdb_path: str) -> str | None:
 
     # Minimal conversion via Meeko/obabel fallback
     import subprocess
+    import shutil
+
+    obabel_cmd = shutil.which("obabel") or "/opt/homebrew/bin/obabel"
 
     result = subprocess.run(
       [
-        "obabel", pdb_path, "-O", pdbqt_path,
+        obabel_cmd, pdb_path, "-O", pdbqt_path,
         "-xr", "--partialcharge", "gasteiger",
       ],
       capture_output=True, text=True,
