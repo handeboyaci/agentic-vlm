@@ -85,3 +85,27 @@ def extract_pocket_seq(pdb_path: str, cutoff: float = 8.0) -> Optional[str]:
   if not pocket_residues: return None
   pocket_residues.sort(key=lambda x: x[0])
   return "".join(r[1] for r in pocket_residues)
+
+def extract_ligand_center(pdb_path: str) -> Optional[tuple[float, float, float]]:
+  """Extract the geometric center (x,y,z) of the largest non-water HETATM."""
+  hetatm_by_res = {}
+  try:
+    with open(pdb_path) as f:
+      for line in f:
+        if line.startswith("HETATM"):
+          resname = line[17:20].strip()
+          if resname in SKIP_HETATM: continue
+          x = float(line[30:38])
+          y = float(line[38:46])
+          z = float(line[46:54])
+          hetatm_by_res.setdefault(resname, []).append((x, y, z))
+  except Exception as exc:
+    logger.debug("PDB parse failed: %s", exc)
+    return None
+
+  if not hetatm_by_res: return None
+  ligand_res = max(hetatm_by_res, key=lambda r: len(hetatm_by_res[r]))
+  ligand_coords = np.array(hetatm_by_res[ligand_res])
+  center = ligand_coords.mean(axis=0)
+  return float(center[0]), float(center[1]), float(center[2])
+

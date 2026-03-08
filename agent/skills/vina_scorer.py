@@ -120,11 +120,14 @@ def dock_molecule(
   # Prepare receptor
   receptor_pdbqt = None
   if pdb_id:
-    from utils.pocket import fetch_pdb
+    from utils.pocket import fetch_pdb, extract_ligand_center
 
     pdb_path = fetch_pdb(pdb_id, cache_dir="data/raw/pdbs")
     if pdb_path:
       receptor_pdbqt = _prepare_receptor(pdb_path)
+      calc_center = extract_ligand_center(pdb_path)
+      if calc_center:
+        center = calc_center
 
   if receptor_pdbqt is None:
     logger.warning("No receptor available; scoring only.")
