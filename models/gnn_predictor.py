@@ -1,4 +1,5 @@
 """SOTA binding affinity predictor with E(n) equivariant GNN."""
+
 from __future__ import annotations
 
 import torch
@@ -36,14 +37,16 @@ class GNNPredictor(nn.Module):
     )
 
     self.edge_builder = MultiScaleEdgeBuilder(edge_dim=edge_dim)
-    self.egnn_layers = nn.ModuleList([
-      EGNNLayer(
-        node_dim=hidden_dim,
-        edge_dim=edge_dim,
-        hidden_dim=hidden_dim,
-      )
-      for _ in range(n_layers)
-    ])
+    self.egnn_layers = nn.ModuleList(
+      [
+        EGNNLayer(
+          node_dim=hidden_dim,
+          edge_dim=edge_dim,
+          hidden_dim=hidden_dim,
+        )
+        for _ in range(n_layers)
+      ]
+    )
 
     self.protein_encoder = None
     if use_protein_encoder:
@@ -73,10 +76,7 @@ class GNNPredictor(nn.Module):
     edge_index, edge_attr = self.edge_builder(pos, batch)
     for layer in self.egnn_layers:
       h, pos = layer(h, pos, edge_index, edge_attr)
-    if (
-      self.protein_encoder is not None
-      and protein_embs is not None
-    ):
+    if self.protein_encoder is not None and protein_embs is not None:
       h = self.protein_encoder(h, protein_embs, batch)
     graph_emb = self.pool(h, batch)
     return self.head(graph_emb)

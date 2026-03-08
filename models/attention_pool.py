@@ -1,18 +1,17 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+
 
 class AttentionPool(nn.Module):
   """Attention-weighted graph pooling."""
+
   def __init__(self, in_dim, hidden_dim):
     super().__init__()
     # Adding gate to match state_dict
     self.gate = nn.Sequential(
-      nn.Linear(in_dim, hidden_dim),
-      nn.SiLU(),
-      nn.Linear(hidden_dim, 1)
+      nn.Linear(in_dim, hidden_dim), nn.SiLU(), nn.Linear(hidden_dim, 1)
     )
-    
+
   def forward(self, h, batch):
     weights = self.gate(h)
     max_batch = int(batch.max().item()) + 1

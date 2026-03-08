@@ -1,4 +1,5 @@
 """Vina docking skill: physics-based binding score via AutoDock Vina."""
+
 from __future__ import annotations
 
 import logging
@@ -26,8 +27,7 @@ def _check_vina() -> bool:
     _VINA_AVAILABLE = True
   except ImportError:
     logger.warning(
-      "Vina/Meeko not installed. "
-      "Install with: conda install -c conda-forge vina meeko",
+      "Vina/Meeko not installed. Install with: conda install -c conda-forge vina meeko",
     )
     _VINA_AVAILABLE = False
   return _VINA_AVAILABLE
@@ -58,7 +58,6 @@ def _mol_to_pdbqt(mol: Chem.Mol) -> str | None:
 def _prepare_receptor(pdb_path: str) -> str | None:
   """Prepare receptor from PDB file (basic conversion)."""
   try:
-    from meeko import PDBQTWriterLegacy
 
     # Simple conversion — production code should use
     # ADFR Suite's prepare_receptor for proper handling
@@ -74,10 +73,16 @@ def _prepare_receptor(pdb_path: str) -> str | None:
 
     result = subprocess.run(
       [
-        obabel_cmd, pdb_path, "-O", pdbqt_path,
-        "-xr", "--partialcharge", "gasteiger",
+        obabel_cmd,
+        pdb_path,
+        "-O",
+        pdbqt_path,
+        "-xr",
+        "--partialcharge",
+        "gasteiger",
       ],
-      capture_output=True, text=True,
+      capture_output=True,
+      text=True,
     )
     if result.returncode == 0 and os.path.exists(pdbqt_path):
       return pdbqt_path
@@ -139,7 +144,9 @@ def dock_molecule(
 
     # Write ligand to temp file
     with tempfile.NamedTemporaryFile(
-      suffix=".pdbqt", mode="w", delete=False,
+      suffix=".pdbqt",
+      mode="w",
+      delete=False,
     ) as f:
       f.write(pdbqt_lig)
       lig_path = f.name

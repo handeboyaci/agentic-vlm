@@ -1,4 +1,5 @@
 """Uni-Mol predictor skill: binding affinity via fine-tuned Uni-Mol."""
+
 from __future__ import annotations
 
 import logging
@@ -21,13 +22,13 @@ def _ensure_unimol():
     from unimol_tools import MolPredict
   except ImportError:
     logger.warning(
-      "unimol_tools not installed. "
-      "Install with: pip install unimol_tools",
+      "unimol_tools not installed. Install with: pip install unimol_tools",
     )
     return False
 
   model_dir = os.environ.get(
-    "UNIMOL_MODEL_DIR", "unimol_binding_model",
+    "UNIMOL_MODEL_DIR",
+    "unimol_binding_model",
   )
   if not os.path.isdir(model_dir):
     logger.warning(
@@ -69,7 +70,9 @@ def score_molecules(
   # Uni-Mol expects CSV input
   df = pd.DataFrame({"SMILES": smiles_list})
   with tempfile.NamedTemporaryFile(
-    suffix=".csv", mode="w", delete=False,
+    suffix=".csv",
+    mode="w",
+    delete=False,
   ) as f:
     df.to_csv(f, index=False)
     tmp_path = f.name
@@ -78,12 +81,14 @@ def score_molecules(
     preds = _predictor.predict(data=tmp_path)
     results = []
     for smi, pka in zip(smiles_list, preds.flatten()):
-      results.append({
-        "smiles": smi,
-        "pka_mean": float(pka),
-        "pka_std": 0.0,  # deterministic — no MC Dropout
-        "confident": True,
-      })
+      results.append(
+        {
+          "smiles": smi,
+          "pka_mean": float(pka),
+          "pka_std": 0.0,  # deterministic — no MC Dropout
+          "confident": True,
+        }
+      )
     return results
   except Exception as exc:
     logger.warning("Uni-Mol scoring failed: %s", exc)

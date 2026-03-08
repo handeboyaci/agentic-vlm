@@ -1,4 +1,5 @@
 """Architect agent skills: genetic algorithm for molecule evolution."""
+
 import logging
 import random
 from typing import Optional
@@ -89,24 +90,28 @@ def crossover_molecules(
     logger.debug("BRICS decomposition yielded no fragments; falling back to mutation.")
     return mutate_molecule(mol1)
 
-  # Strip BRICS dummy-atom labels (e.g. "[3*]") so the SMILES can be parsed
-  frag1 = random.choice(frags1)
-  frag2 = random.choice(frags2)
-
-  child_smiles = frag1 + "." + frag2
-  child = Chem.MolFromSmiles(child_smiles)
-
-  if child is None:
-    logger.debug("BRICS child SMILES invalid; falling back to mutation.")
-    return mutate_molecule(mol1)
-
+  # Properly use BRICSBuild to recombine fragments chemically
   try:
-    Chem.SanitizeMol(child)
-    logger.debug("Crossover successful: %s", Chem.MolToSmiles(child))
-    return child
+    # We combine one random fragment from mol1 with one from mol2
+    frag1_mol = Chem.MolFromSmiles(random.choice(frags1))
+    frag2_mol = Chem.MolFromSmiles(random.choice(frags2))
+    
+    # BRICSBuild yields a generator of possible recombined molecules
+    builder = BRICS.BRICSBuild([frag1_mol, frag2_mol])
+    
+    # Try to get the first valid child
+    for child in builder:
+      child.UpdatePropertyCache(strict=False)
+      Chem.GetSSSR(child)
+      if child.GetNumAtoms() > 0:
+        logger.debug("Crossover successful: %s", Chem.MolToSmiles(child))
+        return child
+        
   except Exception as exc:
-    logger.debug("Crossover sanitization failed: %s", exc)
-    return None
+    logger.debug("BRICS Build failed: %s", exc)
+
+  # Fallback if no valid combination is found
+  return mutate_molecule(mol1)
 
 
 def evolve_generation(

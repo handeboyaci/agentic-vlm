@@ -1,4 +1,5 @@
 """Chemist agent skills: SMILES validation, Lipinski filtering, fingerprints."""
+
 import logging
 from typing import Any, Optional
 
@@ -68,7 +69,9 @@ def apply_lipinski_rules(
   hbd = Descriptors.NumHDonors(mol)
   hba = Descriptors.NumHAcceptors(mol)
 
-  logger.debug("Lipinski check — MW=%.2f, LogP=%.2f, HBD=%d, HBA=%d", mw, logp, hbd, hba)
+  logger.debug(
+    "Lipinski check — MW=%.2f, LogP=%.2f, HBD=%d, HBA=%d", mw, logp, hbd, hba
+  )
 
   if mw > max_mw:
     logger.info("Failed Lipinski: MW %.2f > %.2f", mw, max_mw)

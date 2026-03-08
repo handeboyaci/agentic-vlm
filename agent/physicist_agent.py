@@ -1,4 +1,5 @@
 """Physicist agent logic."""
+
 from typing import Any
 
 from rdkit import Chem
@@ -24,10 +25,10 @@ class PhysicistAgent(BaseAgent):
       mol_3d = physicist.generate_conformer(mol, random_seed=self.config.random_seed)
       if mol_3d is None:
         continue
-      
+
       mol_min, energy = physicist.minimize_energy(mol_3d)
       descriptors = physicist.calculate_3d_descriptors(mol_min)
-      
+
       results.append(
         {
           "smiles": Chem.MolToSmiles(mol_min),

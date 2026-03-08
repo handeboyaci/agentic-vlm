@@ -1,4 +1,5 @@
 """Unit tests for architect, physicist, and scout skills."""
+
 import pytest
 from rdkit import Chem
 
@@ -37,7 +38,10 @@ def test_evolve_generation(
   population = [aspirin, caffeine, ethanol]
   fitness = [0.9, 0.7, 0.5]
   next_gen = architect.evolve_generation(
-    population, fitness, top_k=2, mutation_rate=0.8,
+    population,
+    fitness,
+    top_k=2,
+    mutation_rate=0.8,
   )
   assert isinstance(next_gen, list)
   assert len(next_gen) == len(population)
@@ -100,7 +104,8 @@ def _static_search(disease: str):
 
 def test_identify_target_alzheimers():
   target = scout.identify_target(
-    "Alzheimer's", search_func=_static_search,
+    "Alzheimer's",
+    search_func=_static_search,
   )
   assert target["name"] == "BACE1"
   assert target["location"] == "CNS"
@@ -108,20 +113,23 @@ def test_identify_target_alzheimers():
 
 def test_identify_target_unknown():
   target = scout.identify_target(
-    "UnknownDisease", search_func=_static_search,
+    "UnknownDisease",
+    search_func=_static_search,
   )
   assert target["name"] == "Unknown"
 
 
 def test_identify_target_injectable():
-  mock = lambda _: {"name": "MockTarget", "location": "Systemic"}
+  def mock(_):
+    return {"name": "MockTarget", "location": "Systemic"}
   target = scout.identify_target("Anything", search_func=mock)
   assert target["name"] == "MockTarget"
 
 
 def test_determine_constraints_cns():
   target = scout.identify_target(
-    "Alzheimer's", search_func=_static_search,
+    "Alzheimer's",
+    search_func=_static_search,
   )
   constraints = scout.determine_constraints(target)
   assert constraints["max_mw"] == 400.0  # CNS rule
@@ -129,7 +137,8 @@ def test_determine_constraints_cns():
 
 def test_determine_constraints_systemic():
   target = scout.identify_target(
-    "Cancer", search_func=_static_search,
+    "Cancer",
+    search_func=_static_search,
   )
   constraints = scout.determine_constraints(target)
   assert constraints["max_mw"] == 500.0

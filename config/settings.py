@@ -1,5 +1,6 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+
 
 @dataclass
 class ChemistConfig:
@@ -10,6 +11,7 @@ class ChemistConfig:
   fingerprint_radius: int = 2
   fingerprint_bits: int = 2048
 
+
 @dataclass
 class ArchitectConfig:
   population_size: int = 20
@@ -17,10 +19,12 @@ class ArchitectConfig:
   top_k_survivors: int = 5
   random_seed: int = 42
 
+
 @dataclass
 class PhysicistConfig:
   random_seed: int = 42
   minimization_iter: int = 100
+
 
 @dataclass
 class PredictorConfig:
@@ -31,6 +35,7 @@ class PredictorConfig:
   dropout: float = 0.1
   uncertainty_threshold: float = 0.5
   mc_samples: int = 30
+
 
 @dataclass
 class ScoutConfig:

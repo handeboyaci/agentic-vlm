@@ -1,0 +1,25 @@
+[project]
+name = "virtual-lab-manager"
+version = "0.1.0"
+description = "Multi-agent orchestration system for early-stage drug discovery"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 88
+indent-width = 2
+exclude = [
+    ".git/",
+    ".venv/",
+    ".gemini/",
+    "AutoDock-Vina/",
+    "**/.pytest_cache/",
+]
+
+[tool.ruff.format]
+indent-style = "space"
+
+[tool.pyright]
+exclude = [
+    "AutoDock-Vina/",
+    "**/*.ipynb",
+]

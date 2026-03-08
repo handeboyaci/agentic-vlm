@@ -1,5 +1,5 @@
 """Architect agent logic."""
-from typing import Any
+
 
 from rdkit import Chem
 

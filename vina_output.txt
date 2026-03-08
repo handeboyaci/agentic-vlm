@@ -1,0 +1,114 @@
+2026-03-08 14:14:59,143  INFO      Pipeline starting for disease: Cancer
+2026-03-08 14:14:59,831  INFO      Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2026-03-08 14:14:59,863  INFO      Use pytorch device_name: mps
+2026-03-08 14:14:59,863  INFO      Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2026-03-08 14:14:59,942  INFO      HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-08 14:14:59,952  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/modules.json "HTTP/1.1 200 OK"
+2026-03-08 14:14:59,977  INFO      HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-08 14:14:59,986  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-03-08 14:15:00,014  INFO      HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-08 14:15:00,025  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-03-08 14:15:00,048  INFO      HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-03-08 14:15:00,062  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/README.md "HTTP/1.1 200 OK"
+2026-03-08 14:15:00,086  INFO      HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-08 14:15:00,096  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/modules.json "HTTP/1.1 200 OK"
+2026-03-08 14:15:00,121  INFO      HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-08 14:15:00,129  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/sentence_bert_config.json "HTTP/1.1 200 OK"
+2026-03-08 14:15:00,154  INFO      HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-03-08 14:15:00,182  INFO      HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-03-08 14:15:00,183  WARNING   Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-03-08 14:15:00,192  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 19742.86it/s]
+[1mBertModel LOAD REPORT[0m from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  | 
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.[0m
+2026-03-08 14:15:00,271  INFO      HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-08 14:15:00,290  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/config.json "HTTP/1.1 200 OK"
+2026-03-08 14:15:00,316  INFO      HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-08 14:15:00,349  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-03-08 14:15:00,398  INFO      HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-03-08 14:15:00,423  INFO      HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-03-08 14:15:00,484  INFO      HTTP Request: HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-03-08 14:15:00,493  INFO      HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/all-MiniLM-L6-v2/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+2026-03-08 14:15:00,521  INFO      HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 200 OK"
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:00<00:00, 13.38it/s]
+2026-03-08 14:15:00,831  INFO      Target identified via RAG: EGFR
+2026-03-08 14:15:00,831  INFO      Target: EGFR (location=Systemic)
+[14:15:00] Can't kekulize mol.  Unkekulized atoms: 3 4 5 21 23
+2026-03-08 14:15:00,833  INFO      ── Feedback round 1/1 ──
+[14:15:00] UFFTYPER: Unrecognized atom type: *_ (0)
+[14:15:00] UFFTYPER: Unrecognized atom type: *_ (7)
+2026-03-08 14:15:00,853  WARNING   MMFF parameterisation failed; returning inf energy.
+2026-03-08 14:15:00,853  INFO      Scoring 3 molecules with vina
+Computing Vina grid ... done.
+WARNING: At low exhaustiveness, it may be impossible to utilize all CPUs.
+Performing docking (random seed: -1490875466) ... 
+0%   10   20   30   40   50   60   70   80   90   100%
+|----|----|----|----|----|----|----|----|----|----|
+***************************************************
+
+mode |   affinity | dist from best mode
+     | (kcal/mol) | rmsd l.b.| rmsd u.b.
+-----+------------+----------+----------
+   1            0          0          0
+   2            0      1.688      2.193
+   3            0      16.81      18.46
+   4            0      5.682      7.458
+   5            0      9.324      10.58
+   6            0      14.01       15.6
+   7    8.331e-06      11.16      12.43
+   8    8.331e-06      7.223      8.985
+   9    0.0002433      13.61      14.93
+  10    0.0002516      13.21      14.89
+  11    0.0002516      2.909      4.012
+  12     0.001036      2.759      3.681
+  13     0.001279      5.326       7.22
+  14     0.001279      5.072      6.734
+  15     0.001279      10.03      11.44
+  16     0.001279      9.419      10.52
+  17     0.001279      9.397      10.63
+  18     0.001279      9.825      11.23
+  19     0.001279      9.323       10.7
+  20     0.002537      3.039       5.05
+Computing Vina grid ... done.
+WARNING: At low exhaustiveness, it may be impossible to utilize all CPUs.
+Performing docking (random seed: 1751160327) ... 
+0%   10   20   30   40   50   60   70   80   90   100%
+|----|----|----|----|----|----|----|----|----|----|
+***************************************************
+2026-03-08 14:15:02,315  WARNING   Meeko prep failed: RDKit molecule has 2 fragments. Must have 1.
+2026-03-08 14:15:02,316  WARNING   Vina failed for: [16*]c1c([16*])c([H])c([H])c([H])c1[H].[H]c1nc2c(n1C([H])([H])[H])C(=O)N(C([H])([H])[H])C(=O)N2C([H])([H])[H]
+2026-03-08 14:15:02,316  INFO      All molecules confident; stopping.
+
+Top Results for Cancer
+1. [H]OC(=O)c1c([H])c([H])c([H])c([H])c1OC(=O)C([H])([H])[H] | pKa: -0.00 ✅
+2. [H]c1nc2c(n1C([H])([H])[H])C(=O)N(C([H])([H])[H])C(=O)N2C([H])([H])[H] | pKa: -0.00 ✅
+
+mode |   affinity | dist from best mode
+     | (kcal/mol) | rmsd l.b.| rmsd u.b.
+-----+------------+----------+----------
+   1            0          0          0
+   2            0      2.298      2.304
+   3            0      1.953      2.188
+   4            0      3.292      4.111
+   5            0      3.998      5.344
+   6            0      3.653      4.729
+   7            0      17.11      17.94
+   8            0      17.62       18.4
+   9            0      14.88      15.63
+  10            0      16.08      16.84
+  11            0      10.56      12.17
+  12            0      9.968      10.92
+  13            0      7.109      8.507
+  14            0      6.823      7.486
+  15            0      10.28      11.76
+  16            0      11.77       13.4
+  17            0      10.11       11.9
+  18            0      8.322      9.744
+  19            0      9.366      11.23
+  20            0      10.14       11.1

@@ -1,4 +1,5 @@
 """Predictor agent: binding affinity scoring with multiple backends."""
+
 from __future__ import annotations
 
 import logging
@@ -27,8 +28,7 @@ class PredictorAgent(BaseAgent):
     super().__init__(cfg)
     if scoring not in self.BACKENDS:
       raise ValueError(
-        f"Unknown scoring backend: {scoring!r}. "
-        f"Choose from {self.BACKENDS}",
+        f"Unknown scoring backend: {scoring!r}. Choose from {self.BACKENDS}",
       )
     self.scoring = scoring
     self._model = None
@@ -63,15 +63,15 @@ class PredictorAgent(BaseAgent):
       if score is None:
         logger.warning("GNN could not score: %s", smiles)
         continue
-      confident = (
-        score["pka_std"] < self.config.uncertainty_threshold
+      confident = score["pka_std"] < self.config.uncertainty_threshold
+      results.append(
+        {
+          "smiles": smiles,
+          "pka_mean": score["pka_mean"],
+          "pka_std": score["pka_std"],
+          "confident": confident,
+        }
       )
-      results.append({
-        "smiles": smiles,
-        "pka_mean": score["pka_mean"],
-        "pka_std": score["pka_std"],
-        "confident": confident,
-      })
     return results
 
   def _score_unimol(

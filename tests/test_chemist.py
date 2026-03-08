@@ -1,4 +1,5 @@
 """Unit tests for chemist.py skills."""
+
 import numpy as np
 import pytest
 from rdkit import Chem
@@ -58,7 +59,8 @@ def test_lipinski_raises_on_none():
 def test_lipinski_custom_constraints(aspirin: Chem.Mol):
   assert (
     chemist.apply_lipinski_rules(
-      aspirin, constraints={"max_mw": 100},
+      aspirin,
+      constraints={"max_mw": 100},
     )
     is False
   )

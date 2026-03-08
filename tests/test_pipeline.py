@@ -1,5 +1,5 @@
 """Integration test: end-to-end DrugDiscoveryPipeline."""
-import pytest
+
 
 from agent.pipeline import DrugDiscoveryPipeline
 from config.settings import ArchitectConfig
@@ -17,7 +17,8 @@ SMALL_LIBRARY = [
 def test_pipeline_runs_without_error() -> None:
   pipeline = DrugDiscoveryPipeline(
     architect_config=ArchitectConfig(
-      population_size=5, top_k_survivors=2,
+      population_size=5,
+      top_k_survivors=2,
     ),
     max_feedback_rounds=1,
   )

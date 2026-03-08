@@ -1,4 +1,5 @@
 """Shared pytest fixtures for VLM test suite."""
+
 import pytest
 from rdkit import Chem
 

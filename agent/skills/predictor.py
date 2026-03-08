@@ -1,4 +1,5 @@
 """Predictor agent skills: GNN scoring with uncertainty."""
+
 from __future__ import annotations
 
 import logging
@@ -31,10 +32,7 @@ def _mol_to_tensors(
       return None
     conf = mol.GetConformer()
     pos = torch.tensor(
-      [
-        list(conf.GetAtomPosition(i))
-        for i in range(mol.GetNumAtoms())
-      ],
+      [list(conf.GetAtomPosition(i)) for i in range(mol.GetNumAtoms())],
       dtype=torch.float,
     )
     return x, pos
@@ -86,7 +84,9 @@ def score_molecule(
   x, pos = tensors
   x, pos = x.to(device), pos.to(device)
   batch = torch.zeros(
-    x.size(0), dtype=torch.long, device=device,
+    x.size(0),
+    dtype=torch.long,
+    device=device,
   )
 
   protein_embs = None
@@ -107,7 +107,9 @@ def score_molecule(
         pass
 
   mean, std = model.predict_with_uncertainty(
-    x, pos, batch,
+    x,
+    pos,
+    batch,
     protein_embs=protein_embs,
     n_samples=mc_samples,
   )

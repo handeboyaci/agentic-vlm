@@ -1,4 +1,5 @@
 """Scout agent skills: target identification and constraint derivation."""
+
 from __future__ import annotations
 
 import logging
@@ -13,16 +14,24 @@ _DEFAULT_CFG = ScoutConfig()
 # Static knowledge base (fallback if RAG is unavailable).
 _TARGET_DB: dict[str, dict[str, str]] = {
   "Alzheimer's": {
-    "name": "BACE1", "uniprot": "P56817", "location": "CNS",
+    "name": "BACE1",
+    "uniprot": "P56817",
+    "location": "CNS",
   },
   "Cancer": {
-    "name": "EGFR", "uniprot": "P00533", "location": "Systemic",
+    "name": "EGFR",
+    "uniprot": "P00533",
+    "location": "Systemic",
   },
   "Diabetes": {
-    "name": "DPP4", "uniprot": "P27487", "location": "Systemic",
+    "name": "DPP4",
+    "uniprot": "P27487",
+    "location": "Systemic",
   },
   "COVID-19": {
-    "name": "MPro", "uniprot": "P0DTD1", "location": "Systemic",
+    "name": "MPro",
+    "uniprot": "P0DTD1",
+    "location": "Systemic",
   },
 }
 
@@ -37,7 +46,8 @@ def rag_search(disease_name: str) -> dict[str, Any]:
     docs = store.retrieve(disease_name, top_k=5)
     if not docs:
       logger.warning(
-        "No RAG documents found for: %s", disease_name,
+        "No RAG documents found for: %s",
+        disease_name,
       )
       return {}
 
@@ -46,7 +56,8 @@ def rag_search(disease_name: str) -> dict[str, Any]:
     if "target_name" in result and "name" not in result:
       result["name"] = result.pop("target_name")
     logger.info(
-      "Target identified via RAG: %s", result.get("name"),
+      "Target identified via RAG: %s",
+      result.get("name"),
     )
     return result
   except Exception as exc:
@@ -104,15 +115,18 @@ def determine_constraints(
     "max_hba": 10,
   }
   location = target_info.get(
-    "location", _DEFAULT_CFG.default_location,
+    "location",
+    _DEFAULT_CFG.default_location,
   )
   if location == "CNS":
-    constraints.update({
-      "max_mw": _DEFAULT_CFG.cns_max_mw,
-      "max_logp": _DEFAULT_CFG.cns_max_logp,
-      "max_hbd": _DEFAULT_CFG.cns_max_hbd,
-      "max_psa": _DEFAULT_CFG.cns_max_psa,
-    })
+    constraints.update(
+      {
+        "max_mw": _DEFAULT_CFG.cns_max_mw,
+        "max_logp": _DEFAULT_CFG.cns_max_logp,
+        "max_hbd": _DEFAULT_CFG.cns_max_hbd,
+        "max_psa": _DEFAULT_CFG.cns_max_psa,
+      }
+    )
     logger.info(
       "CNS target detected — applying stricter BBB constraints.",
     )

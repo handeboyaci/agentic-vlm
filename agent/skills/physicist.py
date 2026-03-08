@@ -1,4 +1,5 @@
 """Physicist agent skills: 3D conformer generation and energy minimisation."""
+
 import logging
 from typing import Optional
 
@@ -50,9 +51,7 @@ def minimize_energy(mol: Optional[Chem.Mol]) -> tuple[Optional[Chem.Mol], float]
     ValueError: If mol is None or has no conformer.
   """
   if mol is None or mol.GetNumConformers() == 0:
-    raise ValueError(
-      "minimize_energy requires a molecule with at least one conformer."
-    )
+    raise ValueError("minimize_energy requires a molecule with at least one conformer.")
 
   try:
     props = AllChem.MMFFGetMoleculeProperties(mol)

@@ -1,4 +1,5 @@
 """Scout agent logic."""
+
 from typing import Any
 
 from agent.base import BaseAgent

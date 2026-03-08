@@ -1,4 +1,5 @@
 """Chemist agent logic."""
+
 from typing import Any
 
 from rdkit import Chem
@@ -10,7 +11,9 @@ from agent.skills import chemist
 class ChemistAgent(BaseAgent):
   """Agent responsible for checking molecular properties and creating fingerprints."""
 
-  def execute(self, smiles_list: list[str], constraints: dict[str, Any]) -> list[Chem.Mol]:
+  def execute(
+    self, smiles_list: list[str], constraints: dict[str, Any]
+  ) -> list[Chem.Mol]:
     """Filters a list of SMILES strings based on constraints.
 
     Args:

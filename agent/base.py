@@ -1,4 +1,5 @@
 """Abstract base class for all VLM agents."""
+
 from abc import ABC, abstractmethod
 from typing import Any
 
