@@ -1,4 +1,4 @@
-"""Fetch seed molecules from ChEMBL for a given disease target."""
+"""Fetch seed molecules from ChEMBL for a given protein target."""
 
 from __future__ import annotations
 
@@ -27,19 +27,61 @@ DEFAULT_SEEDS = [
 ]
 
 
+def _resolve_target_id(
+  query: str,
+) -> Optional[tuple[str, str]]:
+  """Resolve a protein name to a ChEMBL target ID.
+
+  Args:
+    query: Protein name (e.g. "Acetylcholinesterase") or
+      a ChEMBL ID (e.g. "CHEMBL220").
+
+  Returns:
+    Tuple of (chembl_id, preferred_name) or None.
+  """
+  # If it's already a ChEMBL ID, return as-is
+  if query.upper().startswith("CHEMBL"):
+    return query.upper(), query.upper()
+
+  resp = requests.get(
+    CHEMBL_TARGET_URL,
+    params={"q": query, "format": "json", "limit": 5},
+    timeout=10,
+  )
+  resp.raise_for_status()
+  targets = resp.json().get("targets", [])
+
+  if not targets:
+    return None
+
+  # Prefer SINGLE PROTEIN targets over protein families
+  for t in targets:
+    if t.get("target_type") == "SINGLE PROTEIN":
+      return t["target_chembl_id"], t.get("pref_name", "unknown")
+
+  # Fallback to first result
+  t = targets[0]
+  return t["target_chembl_id"], t.get("pref_name", "unknown")
+
+
 def fetch_seed_molecules(
-  disease: str,
+  target_name: str,
+  disease: str | None = None,
   max_molecules: int = 20,
   min_activity_um: float = 10.0,
 ) -> list[str]:
-  """Fetch bioactive seed molecules from ChEMBL for a disease.
+  """Fetch bioactive seed molecules from ChEMBL.
 
-  Queries ChEMBL for known active compounds against targets
-  associated with the disease. Returns validated SMILES strings
-  suitable as starting population for the genetic algorithm.
+  Queries ChEMBL for known active compounds against the specified
+  protein target. Returns validated SMILES strings suitable as
+  starting population for the genetic algorithm.
 
   Args:
-    disease: Disease name (e.g. "Alzheimer's", "Cancer").
+    target_name: Protein target name (e.g. "Acetylcholinesterase")
+      or a ChEMBL target ID (e.g. "CHEMBL220"). This is the
+      primary search key.
+    disease: Optional disease name, used as fallback if target
+      lookup fails.
     max_molecules: Maximum number of seed molecules to return.
     min_activity_um: Maximum IC50/Ki threshold in µM to filter
       for potent compounds only.
@@ -49,29 +91,29 @@ def fetch_seed_molecules(
     if ChEMBL is unreachable or returns no results.
   """
   try:
-    # Step 1: Find ChEMBL target IDs for the disease
-    resp = requests.get(
-      CHEMBL_TARGET_URL,
-      params={"q": disease, "format": "json", "limit": 5},
-      timeout=10,
-    )
-    resp.raise_for_status()
-    targets = resp.json().get("targets", [])
+    # Step 1: Resolve the target protein to a ChEMBL ID
+    result = _resolve_target_id(target_name)
+    if result is None and disease:
+      logger.info(
+        "Target '%s' not found, falling back to disease '%s'",
+        target_name,
+        disease,
+      )
+      result = _resolve_target_id(disease)
 
-    if not targets:
+    if result is None:
       logger.warning(
-        "No ChEMBL targets found for '%s', using defaults", disease
+        "No ChEMBL target found for '%s', using defaults",
+        target_name,
       )
       return DEFAULT_SEEDS
 
-    # Step 2: Fetch bioactive molecules for the top target
-    target_id = targets[0].get("target_chembl_id")
+    target_id, pref_name = result
     logger.info(
-      "Fetching seeds from ChEMBL target %s (%s)",
-      target_id,
-      targets[0].get("pref_name", "unknown"),
+      "Fetching seeds for %s (%s)", target_id, pref_name
     )
 
+    # Step 2: Fetch bioactive molecules for the target
     act_resp = requests.get(
       CHEMBL_ACTIVITY_URL,
       params={
@@ -79,7 +121,7 @@ def fetch_seed_molecules(
         "standard_type__in": "IC50,Ki,Kd",
         "standard_value__lte": min_activity_um * 1000,  # nM
         "format": "json",
-        "limit": max_molecules * 3,  # fetch extra for filtering
+        "limit": max_molecules * 3,  # extra for filtering
       },
       timeout=15,
     )
@@ -108,13 +150,15 @@ def fetch_seed_molecules(
 
     if seeds:
       logger.info(
-        "Fetched %d seed molecules from ChEMBL", len(seeds)
+        "Fetched %d seed molecules from ChEMBL (%s)",
+        len(seeds),
+        pref_name,
       )
       return seeds
 
     logger.warning(
       "No valid molecules from ChEMBL for '%s', using defaults",
-      disease,
+      target_name,
     )
     return DEFAULT_SEEDS
 

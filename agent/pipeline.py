@@ -67,14 +67,19 @@ class DrugDiscoveryPipeline:
       target.get("location"),
     )
 
-    # Auto-fetch seed molecules from ChEMBL if not provided
+    # Auto-fetch seed molecules from ChEMBL using target protein
     if initial_smiles is None:
       from agent.skills.seed_molecules import fetch_seed_molecules
 
-      initial_smiles = fetch_seed_molecules(disease_name)
+      target_name = target.get("name", disease_name)
+      initial_smiles = fetch_seed_molecules(
+        target_name=target_name,
+        disease=disease_name,
+      )
       logger.info(
-        "Auto-fetched %d seed molecules from ChEMBL",
+        "Auto-fetched %d seed molecules from ChEMBL for '%s'",
         len(initial_smiles),
+        target_name,
       )
 
     # 2. Chemist: filtering
