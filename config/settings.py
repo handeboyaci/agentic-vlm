@@ -40,7 +40,7 @@ class PredictorConfig:
 @dataclass
 class ScoutConfig:
   default_location: str = "Systemic"
-  cns_max_mw: float = 400.0
+  cns_max_mw: float = 500.0
   cns_max_logp: float = 3.0
   cns_max_hbd: int = 3
   cns_max_psa: float = 90.0

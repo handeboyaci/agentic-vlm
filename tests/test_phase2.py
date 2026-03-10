@@ -132,7 +132,7 @@ def test_determine_constraints_cns():
     search_func=_static_search,
   )
   constraints = scout.determine_constraints(target)
-  assert constraints["max_mw"] == 400.0  # CNS rule
+  assert constraints["max_mw"] == 500.0  # CNS rule (standard Lipinski)
 
 
 def test_determine_constraints_systemic():
