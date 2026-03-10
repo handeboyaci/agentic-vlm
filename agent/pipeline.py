@@ -52,13 +52,30 @@ class DrugDiscoveryPipeline:
     self.max_feedback_rounds = max_feedback_rounds
 
   def run(
-    self, disease_name: str, initial_smiles: list, generations: int = 5
+    self,
+    disease_name: str,
+    initial_smiles: list | None = None,
+    generations: int = 5,
   ) -> list[dict[str, Any]]:
     logger.info("Pipeline starting for disease: %s", disease_name)
 
     # 1. Scout: target identification
     target, constraints = self.scout_agent.execute(disease_name)
-    logger.info("Target: %s (location=%s)", target.get("name"), target.get("location"))
+    logger.info(
+      "Target: %s (location=%s)",
+      target.get("name"),
+      target.get("location"),
+    )
+
+    # Auto-fetch seed molecules from ChEMBL if not provided
+    if initial_smiles is None:
+      from agent.skills.seed_molecules import fetch_seed_molecules
+
+      initial_smiles = fetch_seed_molecules(disease_name)
+      logger.info(
+        "Auto-fetched %d seed molecules from ChEMBL",
+        len(initial_smiles),
+      )
 
     # 2. Chemist: filtering
     mols = self.chemist_agent.execute(initial_smiles, constraints)
