@@ -3,32 +3,51 @@ import torch.nn as nn
 
 
 class MultiScaleEdgeBuilder(nn.Module):
-  """Builds multi-scale edges and RBF-encoded distance features."""
+  """Builds multi-scale edges with RBF-encoded distance features."""
 
-  def __init__(self, edge_dim=16, cutoffs=[4.0, 8.0, 12.0]):
+  def __init__(self, edge_dim=16, cutoff=8.0, num_rbf=16):
     super().__init__()
+    self.cutoff = cutoff
+    self.num_rbf = num_rbf
     self.edge_dim = edge_dim
-    self.cutoffs = cutoffs
-    # Set bias=False to match state_dict
-    self.edge_embeddings = nn.Linear(edge_dim, len(cutoffs), bias=False)
+
+    # RBF centers evenly spaced from 0 to cutoff
+    centers = torch.linspace(0.0, cutoff, num_rbf)
+    self.register_buffer("centers", centers)
+    width = (cutoff / num_rbf) * 0.5
+    self.register_buffer("width", torch.tensor(width))
 
   def forward(self, pos, batch):
     num_nodes = pos.size(0)
-    row = torch.arange(num_nodes, device=pos.device).repeat_interleave(num_nodes)
-    col = torch.tile(torch.arange(num_nodes, device=pos.device), (num_nodes,))
+
+    # Build pairwise indices efficiently with cutoff radius
+    row_all = torch.arange(num_nodes, device=pos.device)
+    col_all = torch.arange(num_nodes, device=pos.device)
+    row = row_all.repeat_interleave(num_nodes)
+    col = col_all.repeat(num_nodes)
+
+    # Remove self-loops
     mask = row != col
     row, col = row[mask], col[mask]
+
+    # Keep only edges within same graph
     batch_mask = batch[row] == batch[col]
     row, col = row[batch_mask], col[batch_mask]
+
+    # Compute distances and apply cutoff
+    diff = pos[row] - pos[col]
+    dist = torch.norm(diff, dim=-1)
+    cutoff_mask = dist < self.cutoff
+    row, col = row[cutoff_mask], col[cutoff_mask]
+    dist = dist[cutoff_mask]
+
     edge_index = torch.stack([row, col], dim=0)
 
-    dist = torch.norm(pos[row] - pos[col], dim=-1)
-    edge_attr = []
-    for cutoff in self.cutoffs:
-      edge_attr.append(torch.exp(-((dist / cutoff) ** 2)))
+    # RBF expansion: Gaussian basis functions
+    # Shape: [num_edges, num_rbf]
+    rbf = torch.exp(
+      -((dist.unsqueeze(-1) - self.centers) ** 2)
+      / (2 * self.width**2)
+    )
 
-    _rbf = torch.stack(edge_attr, dim=-1)
-    # The saved weight [3, 16] likely meant it maps 16 features down to 3?
-    # Or maybe it was part of a kernel.
-    # Regardless, we will provide a zero-tensor for the GNN layers to proceed.
-    return edge_index, torch.zeros(edge_index.size(1), self.edge_dim, device=pos.device)
+    return edge_index, rbf

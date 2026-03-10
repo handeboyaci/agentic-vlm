@@ -62,7 +62,7 @@ def load_model(
   ).to(device)
   if os.path.exists(model_path):
     state = torch.load(model_path, map_location=device)
-    model.load_state_dict(state)
+    model.load_state_dict(state, strict=False)
     logger.info("Loaded model from %s", model_path)
   model.eval()
   return model
