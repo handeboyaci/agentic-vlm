@@ -78,7 +78,7 @@ def smiles_to_pyg(
     if cid < 0:
       cid = AllChem.EmbedMolecule(mol, randomSeed=seed + 42)
     if cid < 0:
-      pos = torch.zeros(mol.GetNumAtoms(), 3)
+      continue  # Skip molecule if 3D conformer generation completely fails
     else:
       AllChem.MMFFOptimizeMolecule(mol, confId=cid)
       conf = mol.GetConformer(cid)

@@ -36,7 +36,7 @@ class MultiScaleEdgeBuilder(nn.Module):
 
     # Compute distances and apply cutoff
     diff = pos[row] - pos[col]
-    dist = torch.norm(diff, dim=-1)
+    dist = torch.norm(diff + 1e-10, dim=-1)
     cutoff_mask = dist < self.cutoff
     row, col = row[cutoff_mask], col[cutoff_mask]
     dist = dist[cutoff_mask]
