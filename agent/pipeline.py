@@ -219,12 +219,42 @@ if __name__ == "__main__":
     badge = "✅" if r.get("confident") else "⚠️"
     print(f"{i + 1}. {r['smiles']} | pKa: {r.get('pka_mean', 0):.2f} {badge}")
 
-  if args.output:
-    # Strip non-serialisable mol objects
+  if args.output and results:
+    # Cross-evaluate to get both scores
+    alt_scoring = "unimol" if args.scoring == "gnn" else "gnn"
+    print(f"\nCross-evaluating final {len(results)} molecules with {alt_scoring}...")
+    
+    # Initialize alternative predictor
+    from agent.predictor_agent import PredictorAgent
+    from rdkit import Chem
+    alt_predictor = PredictorAgent(scoring=alt_scoring)
+    
+    # Reconstruct Mol objects
+    mols = []
+    for r in results:
+        # Mol object may or may not be intact; regenerate if needed
+        mol = r.get("mol")
+        if mol is None:
+             from agent.skills import physicist
+             sm_mol = Chem.MolFromSmiles(r["smiles"])
+             mol = physicist.generate_conformer(sm_mol)
+        mols.append(mol)
+        
+    protein_id = target.get("pdb_id") or target.get("uniprot")
+    alt_predictions = alt_predictor.execute(mols, pdb_id=protein_id)
+    alt_map = {p["smiles"]: p for p in alt_predictions}
+
+    # Strip non-serialisable mol objects and add cross-evaluation
     serialisable = []
     for r in results:
       row = {k: v for k, v in r.items() if k != "mol"}
+      alt_pred = alt_map.get(row["smiles"])
+      if alt_pred:
+          row[f"pka_{alt_scoring}"] = alt_pred.get("pka_mean", 0.0)
+      # Rename the primary score for clarity
+      row[f"pka_{args.scoring}"] = row.pop("pka_mean", 0.0)
       serialisable.append(row)
+      
     output = {
       "disease": args.disease,
       "target": {
