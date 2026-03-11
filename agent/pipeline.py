@@ -220,48 +220,135 @@ if __name__ == "__main__":
     print(f"{i + 1}. {r['smiles']} | pKa: {r.get('pka_mean', 0):.2f} {badge}")
 
   if args.output and results:
-    # Cross-evaluate to get both scores
-    alt_scoring = "unimol" if args.scoring == "gnn" else "gnn"
-    print(f"\nCross-evaluating final {len(results)} molecules with {alt_scoring}...")
-    
-    # Initialize alternative predictor
+    # ── Cross-evaluate with ALL scoring backends ──
     from agent.predictor_agent import PredictorAgent
     from rdkit import Chem
-    alt_predictor = PredictorAgent(scoring=alt_scoring)
-    
+
     # Reconstruct Mol objects
     mols = []
     for r in results:
-        # Mol object may or may not be intact; regenerate if needed
-        mol = r.get("mol")
-        if mol is None:
-             from agent.skills import physicist
-             sm_mol = Chem.MolFromSmiles(r["smiles"])
-             mol = physicist.generate_conformer(sm_mol)
-        mols.append(mol)
-        
-    protein_id = target.get("pdb_id") or target.get("uniprot")
-    alt_predictions = alt_predictor.execute(mols, pdb_id=protein_id)
-    alt_map = {p["smiles"]: p for p in alt_predictions}
+      mol = r.get("mol")
+      if mol is None:
+        from agent.skills import physicist
+        sm_mol = Chem.MolFromSmiles(r["smiles"])
+        mol = physicist.generate_conformer(sm_mol)
+      mols.append(mol)
 
-    # Strip non-serialisable mol objects and add cross-evaluation
+    protein_id = target.get("pdb_id") or target.get("uniprot")
+    all_backends = ["gnn", "unimol", "vina"]
+    score_maps: dict[str, dict[str, float]] = {}
+
+    for backend in all_backends:
+      if backend == args.scoring:
+        # Already scored during generation
+        score_maps[backend] = {
+          r["smiles"]: r.get("pka_mean", 0.0) for r in results
+        }
+        continue
+      print(f"\nCross-evaluating with {backend}...")
+      try:
+        pred = PredictorAgent(scoring=backend)
+        preds = pred.execute(mols, pdb_id=protein_id)
+        score_maps[backend] = {
+          p["smiles"]: p.get("pka_mean", 0.0)
+          for p in preds
+        }
+      except Exception as exc:
+        logger.warning("Cross-eval with %s failed: %s", backend, exc)
+        score_maps[backend] = {}
+
+    # Build serialisable output with all scores
     serialisable = []
     for r in results:
       row = {k: v for k, v in r.items() if k != "mol"}
-      alt_pred = alt_map.get(row["smiles"])
-      if alt_pred:
-          row[f"pka_{alt_scoring}"] = alt_pred.get("pka_mean", 0.0)
-      # Rename the primary score for clarity
-      row[f"pka_{args.scoring}"] = row.pop("pka_mean", 0.0)
+      smi = row["smiles"]
+      for backend in all_backends:
+        key = f"pka_{backend}"
+        if backend == args.scoring:
+          row[key] = row.pop("pka_mean", 0.0)
+        elif smi in score_maps.get(backend, {}):
+          row[key] = score_maps[backend][smi]
       serialisable.append(row)
-      
+
     output = {
       "disease": args.disease,
       "target": {
-        k: v for k, v in target.items() if isinstance(v, (str, int, float, list, bool))
+        k: v
+        for k, v in target.items()
+        if isinstance(v, (str, int, float, list, bool))
       },
       "candidates": serialisable,
     }
     with open(args.output, "w") as f:
       json.dump(output, f, indent=2)
     print(f"\nResults saved to {args.output}")
+
+    # ── Generate 3-method comparison chart ──
+    try:
+      import matplotlib
+      matplotlib.use("Agg")
+      import matplotlib.pyplot as plt
+      import numpy as np
+
+      labels = [f"Mol {i+1}" for i in range(len(serialisable))]
+      x = np.arange(len(labels))
+
+      # Collect scores per backend (only backends that produced results)
+      active_backends = []
+      backend_scores = []
+      colors = {"gnn": "#4A90D9", "unimol": "#E67E22", "vina": "#2ECC71"}
+
+      for backend in all_backends:
+        key = f"pka_{backend}"
+        scores = [r.get(key) for r in serialisable]
+        if any(s is not None for s in scores):
+          active_backends.append(backend)
+          backend_scores.append(
+            [s if s is not None else 0.0 for s in scores]
+          )
+
+      n = len(active_backends)
+      width = 0.8 / n if n else 0.35
+
+      fig, ax = plt.subplots(figsize=(10, 6))
+      for i, (backend, scores) in enumerate(
+        zip(active_backends, backend_scores)
+      ):
+        offset = (i - (n - 1) / 2) * width
+        ax.bar(
+          x + offset,
+          scores,
+          width,
+          label=backend.upper(),
+          color=colors.get(backend, "#888"),
+        )
+
+      ax.set_ylabel("Predicted pKa (Higher = Better)")
+      target_name = target.get("name", "Unknown")
+      pdb_label = target.get("pdb_id", "")
+      title_suffix = (
+        f" — {target_name}"
+        + (f" ({pdb_label})" if pdb_label else "")
+      )
+      ax.set_title(
+        f"Tri-Model Scoring for {args.disease}{title_suffix}"
+      )
+      ax.set_xticks(x)
+      ax.set_xticklabels(labels, rotation=45, ha="right")
+      ax.legend()
+
+      chart_path = (
+        args.output.replace(".json", "_chart.png")
+        if ".json" in args.output
+        else "results_chart.png"
+      )
+      fig.tight_layout()
+      plt.savefig(chart_path, dpi=150)
+      plt.close(fig)
+      print(f"Comparison chart saved to {chart_path}")
+    except ImportError:
+      logger.warning(
+        "matplotlib not installed, skipping chart generation."
+      )
+    except Exception as exc:
+      logger.warning("Failed to generate chart: %s", exc)

@@ -15,21 +15,25 @@ _DEFAULT_CFG = ScoutConfig()
 _TARGET_DB: dict[str, dict[str, str]] = {
   "Alzheimer's": {
     "name": "BACE1",
+    "pdb_id": "1SGZ",
     "uniprot": "P56817",
     "location": "CNS",
   },
   "Cancer": {
     "name": "EGFR",
+    "pdb_id": "1M17",
     "uniprot": "P00533",
     "location": "Systemic",
   },
   "Diabetes": {
     "name": "DPP4",
+    "pdb_id": "1N1M",
     "uniprot": "P27487",
     "location": "Systemic",
   },
   "COVID-19": {
     "name": "MPro",
+    "pdb_id": "6LU7",
     "uniprot": "P0DTD1",
     "location": "Systemic",
   },

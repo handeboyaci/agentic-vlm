@@ -135,7 +135,7 @@ def dock_molecule(
         center = calc_center
 
   if receptor_pdbqt is None:
-    logger.warning("No receptor available; scoring only.")
+    logger.warning("No receptor available; skipping Vina docking.")
     return None
 
   try:
