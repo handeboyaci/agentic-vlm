@@ -96,7 +96,10 @@ def identify_target(
     )
     return target
 
-  return {"name": "Unknown", "location": _DEFAULT_CFG.default_location}
+  raise ValueError(
+      f"Could not identify a target protein for '{disease_name}'. "
+      "RAG search failed and no static fallback exists."
+  )
 
 
 def determine_constraints(
