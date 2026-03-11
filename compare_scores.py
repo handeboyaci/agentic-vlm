@@ -33,7 +33,15 @@ def main():
       m = physicist.generate_conformer(m)
       mols.append(m)
 
-    pdb_id = "1M17"  # EGFR
+    pdb_id = "1M17"  # Fallback EGFR
+    
+    if os.path.exists("results.json"):
+        with open("results.json", "r") as f:
+            data = json.load(f)
+            if "target" in data and "pdb_id" in data["target"]:
+                pdb_id = data["target"]["pdb_id"]
+            else:
+                 pdb_id = "Unknown - None Provided"
 
     # 1. EGNN
     print(f"\n--- EGNN (Target: {pdb_id} Pocket Emb) ---")
