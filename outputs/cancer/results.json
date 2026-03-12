@@ -1,0 +1,82 @@
+{
+  "disease": "Cancer",
+  "target": {
+    "name": "EGFR",
+    "pdb_id": "1M17",
+    "uniprot": "P00533",
+    "location": "Systemic"
+  },
+  "candidates": [
+    {
+      "smiles": "[H]OC(=O)C1=C(C(=O)O[H])C([H])=C([H])C([H])=C1[H]",
+      "energy": -31.3429356196185,
+      "descriptors": {
+        "NPR1": 0.5347242662769446,
+        "NPR2": 0.6692694941293942,
+        "PMI1": 417.3190644317577,
+        "PMI2": 522.3232547260908,
+        "PMI3": 780.4378644294023,
+        "RadiusOfGyration": 2.2752687486881205
+      },
+      "passed_lipinski": true,
+      "pka_std": 0.2396101951599121,
+      "confident": true,
+      "pka_gnn": 5.171677589416504,
+      "pka_unimol": 5.184882164001465
+    },
+    {
+      "smiles": "[H]c1c([H])c([H])c(C(=O)N([H])[H])c(OC(=O)C([H])([H])[H])c1[H]",
+      "energy": 14.631924801500682,
+      "descriptors": {
+        "NPR1": 0.4602077596175207,
+        "NPR2": 0.642979728799913,
+        "PMI1": 470.1767405726834,
+        "PMI2": 656.9079004506676,
+        "PMI3": 1021.6619140960333,
+        "RadiusOfGyration": 2.4487186690569493
+      },
+      "passed_lipinski": true,
+      "pka_std": 0.22376017272472382,
+      "confident": true,
+      "pka_gnn": 4.805222511291504,
+      "pka_unimol": 4.247188091278076,
+      "pka_vina": 4.101024890190336
+    },
+    {
+      "smiles": "[H]OC(=O)c1c([H])c([H])c([H])c([H])c1OC(=O)C([H])([H])[H]",
+      "energy": 18.909768979283577,
+      "descriptors": {
+        "NPR1": 0.46268368732903514,
+        "NPR2": 0.6582519544702086,
+        "PMI1": 463.51498906694474,
+        "PMI2": 659.434632850102,
+        "PMI3": 1001.7966955842089,
+        "RadiusOfGyration": 2.4283459818266366
+      },
+      "passed_lipinski": true,
+      "pka_std": 0.2190469354391098,
+      "confident": true,
+      "pka_gnn": 4.441640377044678,
+      "pka_unimol": 4.104150295257568,
+      "pka_vina": 4.016105417276719
+    },
+    {
+      "smiles": "[H]c1nc2c(n1C([H])([H])[H])C(=O)N(C([H])([H])[H])C(=O)N2C([H])([H])[H]",
+      "energy": -122.52841057561285,
+      "descriptors": {
+        "NPR1": 0.4028465587714414,
+        "NPR2": 0.6053828578261727,
+        "PMI1": 473.2659748760287,
+        "PMI2": 711.2065428983652,
+        "PMI3": 1174.8045616160778,
+        "RadiusOfGyration": 2.4646574798263594
+      },
+      "passed_lipinski": true,
+      "pka_std": 0.16861894726753235,
+      "confident": true,
+      "pka_gnn": 3.6647391319274902,
+      "pka_unimol": 4.719464302062988,
+      "pka_vina": 3.91800878477306
+    }
+  ]
+}

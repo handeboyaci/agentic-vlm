@@ -1,0 +1,83 @@
+{
+  "disease": "COVID-19",
+  "target": {
+    "name": "MPro",
+    "pdb_id": "6LU7",
+    "uniprot": "P0DTD1",
+    "location": "Systemic"
+  },
+  "candidates": [
+    {
+      "smiles": "[H]c1c([H])c([H])c(C(=O)N([H])[H])c(OC(=O)C([H])([H])[H])c1[H]",
+      "energy": 14.631924801500682,
+      "descriptors": {
+        "NPR1": 0.4602077596175207,
+        "NPR2": 0.642979728799913,
+        "PMI1": 470.1767405726834,
+        "PMI2": 656.9079004506676,
+        "PMI3": 1021.6619140960333,
+        "RadiusOfGyration": 2.4487186690569493
+      },
+      "passed_lipinski": true,
+      "pka_std": 0.222096249461174,
+      "confident": true,
+      "pka_gnn": 4.760230541229248,
+      "pka_unimol": 4.219993591308594,
+      "pka_vina": 2.960468521229868
+    },
+    {
+      "smiles": "[H]OC(=O)c1c([H])c([H])c([H])c([H])c1OC(=O)C([H])([H])[H]",
+      "energy": 18.909768979283577,
+      "descriptors": {
+        "NPR1": 0.46268368732903514,
+        "NPR2": 0.6582519544702086,
+        "PMI1": 463.51498906694474,
+        "PMI2": 659.434632850102,
+        "PMI3": 1001.7966955842089,
+        "RadiusOfGyration": 2.4283459818266366
+      },
+      "passed_lipinski": true,
+      "pka_std": 0.1995527595281601,
+      "confident": true,
+      "pka_gnn": 4.38258695602417,
+      "pka_unimol": 4.080446243286133,
+      "pka_vina": 2.9172767203513907
+    },
+    {
+      "smiles": "[H]Oc1nc2c(n1C([H])([H])[H])C(=O)N(C([H])([H])[H])C(=O)N2C([H])([H])[H]",
+      "energy": -152.1588890836368,
+      "descriptors": {
+        "NPR1": 0.35199453857000385,
+        "NPR2": 0.6547648419564034,
+        "PMI1": 503.1435748784393,
+        "PMI2": 935.925666986287,
+        "PMI3": 1429.4073337685475,
+        "RadiusOfGyration": 2.6121705669241266
+      },
+      "passed_lipinski": true,
+      "pka_std": 0.2083466798067093,
+      "confident": true,
+      "pka_gnn": 3.909353494644165,
+      "pka_unimol": 4.9772491455078125,
+      "pka_vina": 2.914348462664714
+    },
+    {
+      "smiles": "[H]c1nc2c(n1C([H])([H])[H])C(=O)N(C([H])([H])[H])C(=O)N2C([H])([H])[H]",
+      "energy": -122.52841057561285,
+      "descriptors": {
+        "NPR1": 0.4028465587714414,
+        "NPR2": 0.6053828578261727,
+        "PMI1": 473.2659748760287,
+        "PMI2": 711.2065428983652,
+        "PMI3": 1174.8045616160778,
+        "RadiusOfGyration": 2.4646574798263594
+      },
+      "passed_lipinski": true,
+      "pka_std": 0.18656669557094574,
+      "confident": true,
+      "pka_gnn": 3.6635634899139404,
+      "pka_unimol": 4.778303623199463,
+      "pka_vina": 2.5702781844802343
+    }
+  ]
+}

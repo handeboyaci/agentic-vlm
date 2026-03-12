@@ -1,0 +1,47 @@
+{
+  "disease": "Alzheimer's",
+  "target": {
+    "name": "BACE1",
+    "pdb_id": "4B7R",
+    "uniprot": "P56817",
+    "location": "CNS"
+  },
+  "candidates": [
+    {
+      "smiles": "[H]OC(=O)c1c([H])c([H])c([H])c([H])c1OC(=O)C([H])([H])[H]",
+      "energy": 18.909768979283577,
+      "descriptors": {
+        "NPR1": 0.46268368732903514,
+        "NPR2": 0.6582519544702086,
+        "PMI1": 463.51498906694474,
+        "PMI2": 659.434632850102,
+        "PMI3": 1001.7966955842089,
+        "RadiusOfGyration": 2.4283459818266366
+      },
+      "passed_lipinski": true,
+      "pka_std": 0.2230604887008667,
+      "confident": true,
+      "pka_gnn": 4.453126430511475,
+      "pka_unimol": 4.104150295257568,
+      "pka_vina": -0.0
+    },
+    {
+      "smiles": "[H]c1nc2c(n1C([H])([H])[H])C(=O)N(C([H])([H])[H])C(=O)N2C([H])([H])[H]",
+      "energy": -122.52841057561285,
+      "descriptors": {
+        "NPR1": 0.4028465587714414,
+        "NPR2": 0.6053828578261727,
+        "PMI1": 473.2659748760287,
+        "PMI2": 711.2065428983652,
+        "PMI3": 1174.8045616160778,
+        "RadiusOfGyration": 2.4646574798263594
+      },
+      "passed_lipinski": true,
+      "pka_std": 0.1818750500679016,
+      "confident": true,
+      "pka_gnn": 3.6676454544067383,
+      "pka_unimol": 4.719464302062988,
+      "pka_vina": -0.0
+    }
+  ]
+}
