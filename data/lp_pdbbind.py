@@ -129,9 +129,7 @@ class LPPDBBind(InMemoryDataset):
       urllib.request.urlretrieve(CSV_URL, dst)
 
   def process(self):
-    df = pd.read_csv(
-      os.path.join(self.raw_dir, "LP_PDBBind.csv"), index_col=0
-    )
+    df = pd.read_csv(os.path.join(self.raw_dir, "LP_PDBBind.csv"), index_col=0)
 
     # Apply LP-PDBBind recommended cleanup:
     # - CL1/CL2/CL3: remove complexes with known data quality issues
@@ -139,9 +137,7 @@ class LPPDBBind(InMemoryDataset):
     cl_col = self.clean_level  # e.g. "CL1"
     if cl_col in df.columns:
       df = df[df[cl_col] & ~df["covalent"]]
-      logger.info(
-        "After %s + non-covalent filter: %d complexes", cl_col, len(df)
-      )
+      logger.info("After %s + non-covalent filter: %d complexes", cl_col, len(df))
 
     df_split = df[df["new_split"] == self.split].head(
       self.max_samples if self.max_samples > 0 else len(df)

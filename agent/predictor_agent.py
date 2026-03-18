@@ -85,6 +85,7 @@ class PredictorAgent(BaseAgent):
     return unimol_predictor.score_molecules(
       mols,
       uncertainty_threshold=self.config.uncertainty_threshold,
+      pdb_id=pdb_id,
     )
 
   def _score_vina(

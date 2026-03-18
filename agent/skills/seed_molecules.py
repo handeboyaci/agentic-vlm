@@ -10,12 +10,8 @@ from rdkit import Chem
 
 logger = logging.getLogger(__name__)
 
-CHEMBL_ACTIVITY_URL = (
-  "https://www.ebi.ac.uk/chembl/api/data/activity.json"
-)
-CHEMBL_TARGET_URL = (
-  "https://www.ebi.ac.uk/chembl/api/data/target/search.json"
-)
+CHEMBL_ACTIVITY_URL = "https://www.ebi.ac.uk/chembl/api/data/activity.json"
+CHEMBL_TARGET_URL = "https://www.ebi.ac.uk/chembl/api/data/target/search.json"
 
 # Fallback library if ChEMBL is unreachable
 DEFAULT_SEEDS = [
@@ -109,9 +105,7 @@ def fetch_seed_molecules(
       return DEFAULT_SEEDS
 
     target_id, pref_name = result
-    logger.info(
-      "Fetching seeds for %s (%s)", target_id, pref_name
-    )
+    logger.info("Fetching seeds for %s (%s)", target_id, pref_name)
 
     # Step 2: Fetch bioactive molecules for the target
     act_resp = requests.get(
@@ -163,7 +157,5 @@ def fetch_seed_molecules(
     return DEFAULT_SEEDS
 
   except Exception as exc:
-    logger.warning(
-      "ChEMBL fetch failed (%s), using default seeds", exc
-    )
+    logger.warning("ChEMBL fetch failed (%s), using default seeds", exc)
     return DEFAULT_SEEDS

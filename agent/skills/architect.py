@@ -95,10 +95,10 @@ def crossover_molecules(
     # We combine one random fragment from mol1 with one from mol2
     frag1_mol = Chem.MolFromSmiles(random.choice(frags1))
     frag2_mol = Chem.MolFromSmiles(random.choice(frags2))
-    
+
     # BRICSBuild yields a generator of possible recombined molecules
     builder = BRICS.BRICSBuild([frag1_mol, frag2_mol])
-    
+
     # Try to get the first valid child
     for child in builder:
       child.UpdatePropertyCache(strict=False)
@@ -106,7 +106,7 @@ def crossover_molecules(
       if child.GetNumAtoms() > 0:
         logger.debug("Crossover successful: %s", Chem.MolToSmiles(child))
         return child
-        
+
   except Exception as exc:
     logger.debug("BRICS Build failed: %s", exc)
 

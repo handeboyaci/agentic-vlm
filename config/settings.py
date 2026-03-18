@@ -44,3 +44,14 @@ class ScoutConfig:
   cns_max_logp: float = 3.0
   cns_max_hbd: int = 3
   cns_max_psa: float = 90.0
+
+
+@dataclass
+class LabManagerConfig:
+  """Configuration for the LLM-based Lab Manager orchestrator."""
+
+  model_name: str = "gemini-2.0-flash"
+  max_iterations: int = 5
+  temperature: float = 0.1
+  scoring: str = "gnn"
+  generations_per_round: int = 3

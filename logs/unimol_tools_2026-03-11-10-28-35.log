@@ -1,0 +1,36 @@
+2026-03-11 10:28:35 | unimol_tools/data/conformer.py | 452 | INFO | Uni-Mol Tools | Start generating conformers...
+2026-03-11 10:28:39 | unimol_tools/data/conformer.py | 467 | INFO | Uni-Mol Tools | Succeeded in generating conformers for 100.00% of molecules.
+2026-03-11 10:28:39 | unimol_tools/data/conformer.py | 484 | INFO | Uni-Mol Tools | Succeeded in generating 3d conformers for 100.00% of molecules.
+2026-03-11 10:28:39 | unimol_tools/data/datahub.py | 187 | INFO | Uni-Mol Tools | conf_cache_level is 1, saving conformers to models/unimol_binding_model/tmp6ui2aj3l.sdf.
+2026-03-11 10:28:39 | unimol_tools/data/datahub.py | 201 | INFO | Uni-Mol Tools | Successfully saved sdf file to models/unimol_binding_model/tmp6ui2aj3l.sdf
+2026-03-11 10:28:39 | unimol_tools/tasks/trainer.py | 103 | INFO | Uni-Mol Tools | Using CPU.
+2026-03-11 10:28:39 | unimol_tools/models/unimolv2.py | 176 | INFO | Uni-Mol Tools | Loading pretrained weights from /Users/hande/Documents/VLM/.venv/lib/python3.11/site-packages/unimol_tools/weights/modelzoo/84M/checkpoint.pt
+2026-03-11 10:28:40 | unimol_tools/models/nnmodel.py | 281 | INFO | Uni-Mol Tools | start predict NNModel:unimolv2
+2026-03-11 10:28:40 | unimol_tools/models/unimolv2.py | 176 | INFO | Uni-Mol Tools | Loading pretrained weights from models/unimol_binding_model/model_0.pth
+2026-03-11 10:28:40 | unimol_tools/tasks/trainer.py | 587 | INFO | Uni-Mol Tools | load model success!
+2026-03-11 10:28:40 | unimol_tools/models/unimolv2.py | 176 | INFO | Uni-Mol Tools | Loading pretrained weights from models/unimol_binding_model/model_1.pth
+2026-03-11 10:28:40 | unimol_tools/tasks/trainer.py | 587 | INFO | Uni-Mol Tools | load model success!
+2026-03-11 10:28:40 | unimol_tools/models/unimolv2.py | 176 | INFO | Uni-Mol Tools | Loading pretrained weights from models/unimol_binding_model/model_2.pth
+2026-03-11 10:28:40 | unimol_tools/tasks/trainer.py | 587 | INFO | Uni-Mol Tools | load model success!
+2026-03-11 10:28:40 | unimol_tools/models/unimolv2.py | 176 | INFO | Uni-Mol Tools | Loading pretrained weights from models/unimol_binding_model/model_3.pth
+2026-03-11 10:28:41 | unimol_tools/tasks/trainer.py | 587 | INFO | Uni-Mol Tools | load model success!
+2026-03-11 10:28:41 | unimol_tools/models/unimolv2.py | 176 | INFO | Uni-Mol Tools | Loading pretrained weights from models/unimol_binding_model/model_4.pth
+2026-03-11 10:28:41 | unimol_tools/tasks/trainer.py | 587 | INFO | Uni-Mol Tools | load model success!
+2026-03-11 10:28:41 | unimol_tools/data/conformer.py | 452 | INFO | Uni-Mol Tools | Start generating conformers...
+2026-03-11 10:28:45 | unimol_tools/data/conformer.py | 467 | INFO | Uni-Mol Tools | Succeeded in generating conformers for 100.00% of molecules.
+2026-03-11 10:28:45 | unimol_tools/data/conformer.py | 484 | INFO | Uni-Mol Tools | Succeeded in generating 3d conformers for 100.00% of molecules.
+2026-03-11 10:28:45 | unimol_tools/data/datahub.py | 187 | INFO | Uni-Mol Tools | conf_cache_level is 1, saving conformers to models/unimol_binding_model/tmpd5171tdt.sdf.
+2026-03-11 10:28:45 | unimol_tools/data/datahub.py | 201 | INFO | Uni-Mol Tools | Successfully saved sdf file to models/unimol_binding_model/tmpd5171tdt.sdf
+2026-03-11 10:28:45 | unimol_tools/tasks/trainer.py | 103 | INFO | Uni-Mol Tools | Using CPU.
+2026-03-11 10:28:45 | unimol_tools/models/unimolv2.py | 176 | INFO | Uni-Mol Tools | Loading pretrained weights from /Users/hande/Documents/VLM/.venv/lib/python3.11/site-packages/unimol_tools/weights/modelzoo/84M/checkpoint.pt
+2026-03-11 10:28:46 | unimol_tools/models/nnmodel.py | 281 | INFO | Uni-Mol Tools | start predict NNModel:unimolv2
+2026-03-11 10:28:46 | unimol_tools/models/unimolv2.py | 176 | INFO | Uni-Mol Tools | Loading pretrained weights from models/unimol_binding_model/model_0.pth
+2026-03-11 10:28:46 | unimol_tools/tasks/trainer.py | 587 | INFO | Uni-Mol Tools | load model success!
+2026-03-11 10:28:46 | unimol_tools/models/unimolv2.py | 176 | INFO | Uni-Mol Tools | Loading pretrained weights from models/unimol_binding_model/model_1.pth
+2026-03-11 10:28:46 | unimol_tools/tasks/trainer.py | 587 | INFO | Uni-Mol Tools | load model success!
+2026-03-11 10:28:46 | unimol_tools/models/unimolv2.py | 176 | INFO | Uni-Mol Tools | Loading pretrained weights from models/unimol_binding_model/model_2.pth
+2026-03-11 10:28:46 | unimol_tools/tasks/trainer.py | 587 | INFO | Uni-Mol Tools | load model success!
+2026-03-11 10:28:46 | unimol_tools/models/unimolv2.py | 176 | INFO | Uni-Mol Tools | Loading pretrained weights from models/unimol_binding_model/model_3.pth
+2026-03-11 10:28:46 | unimol_tools/tasks/trainer.py | 587 | INFO | Uni-Mol Tools | load model success!
+2026-03-11 10:28:47 | unimol_tools/models/unimolv2.py | 176 | INFO | Uni-Mol Tools | Loading pretrained weights from models/unimol_binding_model/model_4.pth
+2026-03-11 10:28:47 | unimol_tools/tasks/trainer.py | 587 | INFO | Uni-Mol Tools | load model success!

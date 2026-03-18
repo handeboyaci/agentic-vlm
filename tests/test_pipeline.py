@@ -1,6 +1,5 @@
 """Integration test: end-to-end DrugDiscoveryPipeline."""
 
-
 from agent.pipeline import DrugDiscoveryPipeline
 from config.settings import ArchitectConfig
 

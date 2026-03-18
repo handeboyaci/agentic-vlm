@@ -40,3 +40,7 @@ Thumbs.db
 
 # ChromaDB (rebuilt on demand)
 data/rag_vectordb/
+
+# Large model files
+unimol_binding_model.zip
+models/unimol_binding_model/

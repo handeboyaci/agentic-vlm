@@ -1,0 +1,65 @@
+{
+  "disease": "Cancer",
+  "target": {
+    "name": "EGFR",
+    "pdb_id": "1M17",
+    "uniprot": "P00533",
+    "location": "Systemic"
+  },
+  "candidates": [
+    {
+      "smiles": "[H]OC(=O)c1c([H])c([H])c([H])c(Cl)c1OC(=O)C([H])([H])[H]",
+      "energy": 16.613219959914026,
+      "descriptors": {
+        "NPR1": 0.4994631067172805,
+        "NPR2": 0.6113466063573427,
+        "PMI1": 670.150227149418,
+        "PMI2": 820.2689279897206,
+        "PMI3": 1341.7411979715139,
+        "RadiusOfGyration": 2.568768786153186
+      },
+      "passed_lipinski": true,
+      "pka_std": 0.32151201367378235,
+      "confident": true,
+      "pka_gnn": 5.557583808898926,
+      "pka_unimol": 4.602538108825684,
+      "pka_vina": 4.275256222547584
+    },
+    {
+      "smiles": "[H]OC(=O)c1c([H])c([H])c([H])c([H])c1OC(=O)C([H])([H])[H]",
+      "energy": 18.909768979283577,
+      "descriptors": {
+        "NPR1": 0.46268368732903514,
+        "NPR2": 0.6582519544702086,
+        "PMI1": 463.51498906694474,
+        "PMI2": 659.434632850102,
+        "PMI3": 1001.7966955842089,
+        "RadiusOfGyration": 2.4283459818266366
+      },
+      "passed_lipinski": true,
+      "pka_std": 0.22414465248584747,
+      "confident": true,
+      "pka_gnn": 4.498219013214111,
+      "pka_unimol": 4.104150295257568,
+      "pka_vina": 4.011713030746706
+    },
+    {
+      "smiles": "[H]c1nc2c(n1C([H])([H])[H])C(=O)N(C([H])([H])[H])C(=O)N2C([H])([H])[H]",
+      "energy": -122.52841057561285,
+      "descriptors": {
+        "NPR1": 0.4028465587714414,
+        "NPR2": 0.6053828578261727,
+        "PMI1": 473.2659748760287,
+        "PMI2": 711.2065428983652,
+        "PMI3": 1174.8045616160778,
+        "RadiusOfGyration": 2.4646574798263594
+      },
+      "passed_lipinski": true,
+      "pka_std": 0.1905830055475235,
+      "confident": true,
+      "pka_gnn": 3.6574432849884033,
+      "pka_unimol": 4.719464302062988,
+      "pka_vina": 3.913616398243045
+    }
+  ]
+}

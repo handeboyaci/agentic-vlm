@@ -45,9 +45,6 @@ class MultiScaleEdgeBuilder(nn.Module):
 
     # RBF expansion: Gaussian basis functions
     # Shape: [num_edges, num_rbf]
-    rbf = torch.exp(
-      -((dist.unsqueeze(-1) - self.centers) ** 2)
-      / (2 * self.width**2)
-    )
+    rbf = torch.exp(-((dist.unsqueeze(-1) - self.centers) ** 2) / (2 * self.width**2))
 
     return edge_index, rbf

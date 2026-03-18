@@ -112,16 +112,17 @@ def test_identify_target_alzheimers():
 
 
 def test_identify_target_unknown():
-  target = scout.identify_target(
-    "UnknownDisease",
-    search_func=_static_search,
-  )
-  assert target["name"] == "Unknown"
+  with pytest.raises(ValueError):
+    scout.identify_target(
+      "UnknownDisease",
+      search_func=_static_search,
+    )
 
 
 def test_identify_target_injectable():
   def mock(_):
     return {"name": "MockTarget", "location": "Systemic"}
+
   target = scout.identify_target("Anything", search_func=mock)
   assert target["name"] == "MockTarget"
 

@@ -6,12 +6,17 @@ to go from a disease name to prioritised lead compounds — fully automated.
 ## Architecture
 
 ```
-Disease Query
-     │
-     ▼
+     ┌────────────────────────────────────────────────────────┐
+     │                     Lab Manager (LLM)                  │
+     │  (Dynamically routes tasks and evaluates stop criteria)│
+     └─────────────────────────┬──────────────────────────────┘
+                               │
+Disease Query ─────────────────┘
+                               │
+                               ▼
 ┌──────────┐   RAG (PubMed + ChEMBL)
 │  Scout   │──────────────────────────► Target + Constraints
-└──────────┘   Gemini / OpenAI / Fallback
+└──────────┘   Gemini / OpenAI structured output
      │
      ▼
 ┌──────────┐
@@ -34,10 +39,10 @@ Disease Query
 └──────────┘
      │
      ▼
-  Uncertain? ──yes──► Re-evolve via Architect (feedback loop)
-     │
-    no
-     │
+  Feedback ──(Low Score/Uncertain)──► Re-evolve via Architect
+  returned
+  to LLM
+     │ (High Score/Confident)
      ▼
   Ranked Lead Candidates
 ```
@@ -79,12 +84,12 @@ pip install -r requirements.txt
 # Build the RAG knowledge base
 python scripts/build_rag_index.py --diseases "Alzheimer's,Cancer,COVID-19"
 
-# Run the pipeline
+# Run the Autonomous LLM Orchestrator
 export GOOGLE_API_KEY="your-key-here"
-python agent/pipeline.py --disease "Alzheimer's" --generations 5 --rounds 2
+python scripts/run_lab_manager.py "Find a drug for Alzheimer's"
 
-# Save results as JSON
-python agent/pipeline.py --disease "Cancer" --output results.json
+# Or run the deterministic pipeline directly
+python agent/pipeline.py --disease "Cancer" --generations 5 --rounds 2
 ```
 
 ## Project Structure
@@ -92,12 +97,13 @@ python agent/pipeline.py --disease "Cancer" --output results.json
 ```
 ├── agent/                 # Multi-agent orchestration
 │   ├── base.py            # Abstract base agent
+│   ├── lab_manager.py     # LLM Orchestrator (Gemini)
 │   ├── scout_agent.py     # Target identification
 │   ├── chemist_agent.py   # Molecular filtering
 │   ├── architect_agent.py # Genetic algorithm evolution
 │   ├── physicist_agent.py # 3D conformer generation
 │   ├── predictor_agent.py # Binding affinity scoring (GNN/Uni-Mol/Vina)
-│   ├── pipeline.py        # End-to-end orchestrator
+│   ├── pipeline.py        # Hard-coded orchestrator
 │   └── skills/            # Agent skill implementations
 ├── models/                # Neural network architectures
 │   ├── egnn_layer.py      # E(n) Equivariant GNN layer

@@ -17,7 +17,10 @@ class VectorStore:
     ids = [f"doc_{i}_{hash(d['text'])}" for i, d in enumerate(documents)]
     embeddings = self._model.encode(texts).tolist()
     self._collection.add(
-      ids=ids, embeddings=embeddings, documents=texts, metadatas=metadatas # type: ignore
+      ids=ids,
+      embeddings=embeddings,
+      documents=texts,
+      metadatas=metadatas,  # type: ignore
     )
     return len(ids)
 
@@ -30,8 +33,8 @@ class VectorStore:
         results.append(
           {
             "text": res["documents"][0][i],
-            "metadata": res["metadatas"][0][i], # type: ignore
-            "score": res["distances"][0][i], # type: ignore
+            "metadata": res["metadatas"][0][i],  # type: ignore
+            "score": res["distances"][0][i],  # type: ignore
           }
         )
     return results

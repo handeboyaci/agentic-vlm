@@ -1,6 +1,5 @@
 """Architect agent logic."""
 
-
 from rdkit import Chem
 
 from agent.base import BaseAgent

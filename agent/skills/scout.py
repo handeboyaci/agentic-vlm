@@ -101,8 +101,8 @@ def identify_target(
     return target
 
   raise ValueError(
-      f"Could not identify a target protein for '{disease_name}'. "
-      "RAG search failed and no static fallback exists."
+    f"Could not identify a target protein for '{disease_name}'. "
+    "RAG search failed and no static fallback exists."
   )
 
 

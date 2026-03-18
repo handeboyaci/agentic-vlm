@@ -58,7 +58,6 @@ def _mol_to_pdbqt(mol: Chem.Mol) -> str | None:
 def _prepare_receptor(pdb_path: str) -> str | None:
   """Prepare receptor from PDB file (basic conversion)."""
   try:
-
     # Simple conversion — production code should use
     # ADFR Suite's prepare_receptor for proper handling
     pdbqt_path = pdb_path.replace(".pdb", ".pdbqt")

@@ -98,7 +98,7 @@ class DrugDiscoveryPipeline:
       )
 
       fitness = prev_fitness or [1.0] * len(population)
-      
+
       for gen in range(generations):
         # 3a. Architect: evolution
         population = self.architect_agent.execute(population, fitness)
@@ -117,7 +117,7 @@ class DrugDiscoveryPipeline:
         # Update fitness for the NEXT generation (elitism + parent selection)
         fitness = []
         pred_map = {p["smiles"]: p for p in predictions}
-        
+
         for mol in population:
           smiles = Chem.MolToSmiles(mol)
           score = pred_map.get(smiles, {}).get("pka_mean", 0.0)
@@ -136,7 +136,7 @@ class DrugDiscoveryPipeline:
       # 3d. Feedback: split by confidence of the final generation
       if not predictions:
         break
-        
+
       uncertain = [p for p in predictions if not p["confident"]]
       if not uncertain:
         logger.info("All molecules confident; stopping.")
@@ -148,7 +148,7 @@ class DrugDiscoveryPipeline:
         if m:
           population.append(m)
           prev_fitness.append(u.get("pka_mean", 0.0))
-          
+
       if not population:
         break
 
@@ -230,6 +230,7 @@ if __name__ == "__main__":
       mol = r.get("mol")
       if mol is None:
         from agent.skills import physicist
+
         sm_mol = Chem.MolFromSmiles(r["smiles"])
         mol = physicist.generate_conformer(sm_mol)
       mols.append(mol)
@@ -241,18 +242,13 @@ if __name__ == "__main__":
     for backend in all_backends:
       if backend == args.scoring:
         # Already scored during generation
-        score_maps[backend] = {
-          r["smiles"]: r.get("pka_mean", 0.0) for r in results
-        }
+        score_maps[backend] = {r["smiles"]: r.get("pka_mean", 0.0) for r in results}
         continue
       print(f"\nCross-evaluating with {backend}...")
       try:
         pred = PredictorAgent(scoring=backend)
         preds = pred.execute(mols, pdb_id=protein_id)
-        score_maps[backend] = {
-          p["smiles"]: p.get("pka_mean", 0.0)
-          for p in preds
-        }
+        score_maps[backend] = {p["smiles"]: p.get("pka_mean", 0.0) for p in preds}
       except Exception as exc:
         logger.warning("Cross-eval with %s failed: %s", backend, exc)
         score_maps[backend] = {}
@@ -273,9 +269,7 @@ if __name__ == "__main__":
     output = {
       "disease": args.disease,
       "target": {
-        k: v
-        for k, v in target.items()
-        if isinstance(v, (str, int, float, list, bool))
+        k: v for k, v in target.items() if isinstance(v, (str, int, float, list, bool))
       },
       "candidates": serialisable,
     }
@@ -286,11 +280,12 @@ if __name__ == "__main__":
     # ── Generate 3-method comparison chart ──
     try:
       import matplotlib
+
       matplotlib.use("Agg")
       import matplotlib.pyplot as plt
       import numpy as np
 
-      labels = [f"Mol {i+1}" for i in range(len(serialisable))]
+      labels = [f"Mol {i + 1}" for i in range(len(serialisable))]
       x = np.arange(len(labels))
 
       # Collect scores per backend (only backends that produced results)
@@ -303,17 +298,13 @@ if __name__ == "__main__":
         scores = [r.get(key) for r in serialisable]
         if any(s is not None for s in scores):
           active_backends.append(backend)
-          backend_scores.append(
-            [s if s is not None else 0.0 for s in scores]
-          )
+          backend_scores.append([s if s is not None else 0.0 for s in scores])
 
       n = len(active_backends)
       width = 0.8 / n if n else 0.35
 
       fig, ax = plt.subplots(figsize=(10, 6))
-      for i, (backend, scores) in enumerate(
-        zip(active_backends, backend_scores)
-      ):
+      for i, (backend, scores) in enumerate(zip(active_backends, backend_scores)):
         offset = (i - (n - 1) / 2) * width
         ax.bar(
           x + offset,
@@ -326,13 +317,8 @@ if __name__ == "__main__":
       ax.set_ylabel("Predicted pKa (Higher = Better)")
       target_name = target.get("name", "Unknown")
       pdb_label = target.get("pdb_id", "")
-      title_suffix = (
-        f" — {target_name}"
-        + (f" ({pdb_label})" if pdb_label else "")
-      )
-      ax.set_title(
-        f"Tri-Model Scoring for {args.disease}{title_suffix}"
-      )
+      title_suffix = f" — {target_name}" + (f" ({pdb_label})" if pdb_label else "")
+      ax.set_title(f"Tri-Model Scoring for {args.disease}{title_suffix}")
       ax.set_xticks(x)
       ax.set_xticklabels(labels, rotation=45, ha="right")
       ax.legend()
@@ -347,8 +333,6 @@ if __name__ == "__main__":
       plt.close(fig)
       print(f"Comparison chart saved to {chart_path}")
     except ImportError:
-      logger.warning(
-        "matplotlib not installed, skipping chart generation."
-      )
+      logger.warning("matplotlib not installed, skipping chart generation.")
     except Exception as exc:
       logger.warning("Failed to generate chart: %s", exc)
