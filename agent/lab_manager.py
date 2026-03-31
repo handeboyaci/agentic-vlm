@@ -187,6 +187,15 @@ class LabManager:
       target, constraints = self.scout_agent.execute(disease)
       routing.target_name = target.get("name")
 
+    # Ensure we have default constraints if none found/provided
+    if not constraints:
+      constraints = {
+        "max_mw": self.chemist_agent.config.lipinski_max_mw,
+        "max_logp": self.chemist_agent.config.lipinski_max_logp,
+        "max_hbd": self.chemist_agent.config.lipinski_max_hbd,
+        "max_hba": self.chemist_agent.config.lipinski_max_hba,
+      }
+
     # ── Node 2: Seed (Fetch Initial Molecules) ──
     if routing.phase in (EntryPhase.SCOUT, EntryPhase.SEED):
       target_name = routing.target_name or "Unknown Target"
@@ -206,14 +215,6 @@ class LabManager:
         return []
 
       logger.info(f"Running FILTER on {len(smiles_list)} molecules")
-      # Use basic constraints if scout was skipped
-      if not constraints:
-        constraints = {
-          "max_mw": self.chemist_agent.config.lipinski_max_mw,
-          "max_logp": self.chemist_agent.config.lipinski_max_logp,
-          "max_hbd": self.chemist_agent.config.lipinski_max_hbd,
-          "max_hba": self.chemist_agent.config.lipinski_max_hba,
-        }
       mols = self.chemist_agent.execute(smiles_list, constraints)
     else:
       # SCORE phase provided exactly
@@ -244,8 +245,12 @@ class LabManager:
         logger.info("Running EVOLVE (Architect)")
         for _ in range(gens_per_round):
           population = self.architect_agent.execute(population, prev_fitness)
-          # Note: in a deep loop, Architect might need intermediate scoring,
-          # but here we generate a block of generations then evaluate.
+
+        # ── Optimization: Post-Architect Filter ──
+        # Re-filter newly mutated compounds to ensure drug-likeness
+        logger.info("Running post-evolution FILTER (Chemist)")
+        pop_smiles = [Chem.MolToSmiles(m) for m in population]
+        population = self.chemist_agent.execute(pop_smiles, constraints)
 
       if not population:
         logger.warning("Population died out.")
