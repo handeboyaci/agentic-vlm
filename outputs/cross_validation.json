@@ -1,0 +1,157 @@
+{
+  "bace1": {
+    "label": "BACE1 (Alzheimer's)",
+    "pdb_id": "4B7R",
+    "correlation": {
+      "spearman_r": 0.8999999999999998,
+      "p_value": 0.03738607346849875,
+      "n": 5
+    },
+    "compounds": [
+      {
+        "name": "BACE1-1 (aminothiazine core)",
+        "smiles": "CC(C)(C)c1cc(NC(=O)c2cnc(N)s2)cc(F)c1F",
+        "exp_pki": 7.5,
+        "pred_pka": 7.146385669708252,
+        "pred_std": 0.34449881315231323,
+        "confident": true,
+        "source": "ChEMBL / Merck Verubecestat analog"
+      },
+      {
+        "name": "BACE1-2 (des-fluoro)",
+        "smiles": "CC(C)(C)c1cc(NC(=O)c2cnc(N)s2)ccc1",
+        "exp_pki": 5.8,
+        "pred_pka": 5.4166483879089355,
+        "pred_std": 0.23699234426021576,
+        "confident": true,
+        "source": "Estimated from SAR trend"
+      },
+      {
+        "name": "BACE1-3 (methyl instead of tBu)",
+        "smiles": "Cc1cc(NC(=O)c2cnc(N)s2)cc(F)c1F",
+        "exp_pki": 6.2,
+        "pred_pka": 5.488597393035889,
+        "pred_std": 0.28255319595336914,
+        "confident": true,
+        "source": "SAR: smaller alkyl \u2192 lower potency"
+      },
+      {
+        "name": "BACE1-4 (sulfonyl variant)",
+        "smiles": "CC1(C)CS(=O)(=O)c2cc(F)c(NC(=O)c3cnc(N)s3)cc21",
+        "exp_pki": 7.1,
+        "pred_pka": 6.7630205154418945,
+        "pred_std": 0.3653736114501953,
+        "confident": true,
+        "source": "ChEMBL / JNJ-54861911 analog"
+      },
+      {
+        "name": "BACE1-5 (pyridine variant)",
+        "smiles": "Fc1cc(cc(F)c1)C1(N=C(N)SC1=O)c1cc(ccc1)-c1cccnc1",
+        "exp_pki": 7.3,
+        "pred_pka": 7.675001621246338,
+        "pred_std": 0.3578135073184967,
+        "confident": true,
+        "source": "ChEMBL CHEMBL3039521"
+      }
+    ]
+  },
+  "egfr": {
+    "label": "EGFR (Cancer)",
+    "pdb_id": "1M17",
+    "correlation": {
+      "spearman_r": 0.7999999999999999,
+      "p_value": 0.20000000000000007,
+      "n": 4
+    },
+    "compounds": [
+      {
+        "name": "Erlotinib",
+        "smiles": "COCCOc1cc2ncnc(Nc3cccc(c3)C#C)c2cc1OCCOC",
+        "exp_pki": 8.4,
+        "pred_pka": 7.9787211418151855,
+        "pred_std": 0.4852212965488434,
+        "confident": true,
+        "source": "ChEMBL CHEMBL553 (FDA 2004)"
+      },
+      {
+        "name": "Gefitinib",
+        "smiles": "COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1OCCCN1CCOCC1",
+        "exp_pki": 8.2,
+        "pred_pka": 8.247998237609863,
+        "pred_std": 0.3321244716644287,
+        "confident": true,
+        "source": "ChEMBL CHEMBL939 (FDA 2003)"
+      },
+      {
+        "name": "4-aminoquinazoline core",
+        "smiles": "c1cnc2cc(OC)c(OC)cc2c1Nc1ccccc1",
+        "exp_pki": 5.5,
+        "pred_pka": 5.9654741287231445,
+        "pred_std": 0.31309452652931213,
+        "confident": true,
+        "source": "Quinn et al. J Med Chem 2008"
+      },
+      {
+        "name": "Afatinib scaffold (no warhead)",
+        "smiles": "COc1cc2ncnc(Nc3ccc(F)c(Cl)c3)c2cc1OC1CCOC1",
+        "exp_pki": 7.0,
+        "pred_pka": 7.949215412139893,
+        "pred_std": 0.3780037760734558,
+        "confident": true,
+        "source": "Estimated from published SAR"
+      }
+    ]
+  },
+  "mpro": {
+    "label": "MPro (COVID-19)",
+    "pdb_id": "6LU7",
+    "correlation": {
+      "spearman_r": 0.7999999999999999,
+      "p_value": 0.20000000000000007,
+      "n": 4
+    },
+    "compounds": [
+      {
+        "name": "GC-376",
+        "smiles": "CC(C)CC(NC(=O)OCc1ccccc1)C(=O)NC(CC1CCNC1=O)C=O",
+        "exp_pki": 6.8,
+        "pred_pka": 7.482285499572754,
+        "pred_std": 0.48433467745780945,
+        "confident": true,
+        "source": "Ma et al. Cell Res 2020"
+      },
+      {
+        "name": "Ebselen",
+        "smiles": "c1ccc2c(c1)[Se]N2c1ccccc1",
+        "exp_pki": 5.6,
+        "pred_pka": 4.052520751953125,
+        "pred_std": 0.19811983406543732,
+        "confident": true,
+        "source": "Jin et al. Nature 2020"
+      },
+      {
+        "name": "Carmofur",
+        "smiles": "CCCCCCNC(=O)N1C=CC(=O)NC1=O",
+        "exp_pki": 4.5,
+        "pred_pka": 5.143679141998291,
+        "pred_std": 0.2509232461452484,
+        "confident": true,
+        "source": "Jin et al. Nature Struct Mol Biol 2020"
+      },
+      {
+        "name": "Biphenyl (negative control)",
+        "smiles": "c1ccc(-c2ccccc2)cc1",
+        "exp_pki": 2.0,
+        "pred_pka": 3.526874303817749,
+        "pred_std": 0.15495212376117706,
+        "confident": true,
+        "source": "Negative control"
+      }
+    ]
+  },
+  "overall": {
+    "spearman_r": 0.8791208791208791,
+    "p_value": 7.54456235935913e-05,
+    "n": 13
+  }
+}

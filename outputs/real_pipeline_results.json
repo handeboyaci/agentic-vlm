@@ -22,8 +22,8 @@
           "RadiusOfGyration": 4.150946149329118
         },
         "passed_lipinski": true,
-        "pka_mean": 6.811938285827637,
-        "pka_std": 0.34333446621894836,
+        "pka_mean": 6.726163864135742,
+        "pka_std": 0.35629162192344666,
         "confident": true
       },
       {
@@ -38,8 +38,178 @@
           "RadiusOfGyration": 4.1347317503493795
         },
         "passed_lipinski": true,
-        "pka_mean": 5.782197952270508,
-        "pka_std": 0.3273417353630066,
+        "pka_mean": 5.77609920501709,
+        "pka_std": 0.2825717329978943,
+        "confident": true
+      }
+    ]
+  },
+  "cancer": {
+    "disease": "Cancer",
+    "target": {
+      "uniprot": "",
+      "pdb_id": "1M17",
+      "location": "Systemic",
+      "rationale": "Keyword-based fallback identification.",
+      "name": "EGFR"
+    },
+    "num_candidates": 6,
+    "top_5": [
+      {
+        "smiles": "[H]c1nc(N(c2c([H])c([H])c(F)c(Cl)c2[H])C([H])([H])[H])c2c([H])c(OC([H])([H])C([H])([H])C([H])([H])N3C([H])([H])C([H])([H])OC([H])([H])C3([H])[H])c(OC([H])([H])[H])c([H])c2n1",
+        "energy": 105.44309281543374,
+        "descriptors": {
+          "NPR1": 0.5452673863428666,
+          "NPR2": 0.6391932070381995,
+          "PMI1": 4537.445323861775,
+          "PMI2": 5319.049517654381,
+          "PMI3": 8321.50507715972,
+          "RadiusOfGyration": 4.440555120247007
+        },
+        "passed_lipinski": true,
+        "pka_mean": 8.700067520141602,
+        "pka_std": 0.5188060998916626,
+        "confident": false
+      },
+      {
+        "smiles": "[H]c1nc(N([H])c2c([H])c([H])c(F)c(Cl)c2[H])c2c([H])c(OC([H])([H])C([H])([H])C([H])([H])N3C([H])([H])C([H])([H])OC([H])([H])C3([H])[H])c(OC([H])([H])[H])c([H])c2n1",
+        "energy": 87.81378825360804,
+        "descriptors": {
+          "NPR1": 0.16231404630930724,
+          "NPR2": 0.9017076567263003,
+          "PMI1": 2113.329287097131,
+          "PMI2": 11740.235935761693,
+          "PMI3": 13020.002489925917,
+          "RadiusOfGyration": 5.483244723096573
+        },
+        "passed_lipinski": true,
+        "pka_mean": 8.284321784973145,
+        "pka_std": 0.41953691840171814,
+        "confident": true
+      },
+      {
+        "smiles": "[H]C#Cc1c([H])c([H])c([H])c(N(c2nc([H])nc3c([H])c(OC([H])([H])C([H])([H])OC([H])([H])[H])c(OC([H])([H])C([H])([H])OC([H])([H])[H])c([H])c23)C([H])([H])[H])c1[H]",
+        "energy": 72.02838346579291,
+        "descriptors": {
+          "NPR1": 0.3458806441601195,
+          "NPR2": 0.7298749883035117,
+          "PMI1": 2598.789759212978,
+          "PMI2": 5483.948515577447,
+          "PMI3": 7513.544926815602,
+          "RadiusOfGyration": 4.374694587589773
+        },
+        "passed_lipinski": true,
+        "pka_mean": 8.176167488098145,
+        "pka_std": 0.44205164909362793,
+        "confident": true
+      },
+      {
+        "smiles": "[H]C#Cc1c([H])c([H])c([H])c(N([H])c2nc([H])nc3c([H])c(OC([H])([H])C([H])([H])OC([H])([H])[H])c(OC([H])([H])C([H])([H])OC([H])([H])[H])c([H])c23)c1[H]",
+        "energy": 65.69747808580198,
+        "descriptors": {
+          "NPR1": 0.2722700847074194,
+          "NPR2": 0.8116460988541506,
+          "PMI1": 2228.769202741513,
+          "PMI2": 6644.034472591213,
+          "PMI3": 8185.8761866421755,
+          "RadiusOfGyration": 4.656041045332556
+        },
+        "passed_lipinski": true,
+        "pka_mean": 8.060962677001953,
+        "pka_std": 0.4052136242389679,
+        "confident": true
+      },
+      {
+        "smiles": "[H]C1=NC2=C([H])C(C3=C([H])C([H])=C(F)C(Cl)=C3[H])=C(C3=C([H])C([H])=C(F)C(Cl)=C3[H])C([H])=C2C(C2=C([H])C([H])=C(F)C(Cl)=C2[H])=N1",
+        "energy": 69.71963341759,
+        "descriptors": {
+          "NPR1": 0.3642789540560798,
+          "NPR2": 0.8046407524290972,
+          "PMI1": 3843.5851444626924,
+          "PMI2": 8489.936649454767,
+          "PMI3": 10551.213847701403,
+          "RadiusOfGyration": 4.710193565614959
+        },
+        "passed_lipinski": true,
+        "pka_mean": 8.00894546508789,
+        "pka_std": 0.4725685119628906,
+        "confident": true
+      }
+    ]
+  },
+  "covid": {
+    "disease": "COVID-19",
+    "target": {
+      "uniprot": "",
+      "pdb_id": "6LU7",
+      "location": "CNS",
+      "rationale": "Keyword-based fallback identification.",
+      "name": "MPro"
+    },
+    "num_candidates": 4,
+    "top_5": [
+      {
+        "smiles": "[H]C(=O)C([H])(N([H])C(=O)C([H])(N([H])C(=O)OC([H])([H])c1c([H])c([H])c([H])c([H])c1[H])C([H])([H])C([H])(C([H])([H])[H])C([H])([H])[H])C([H])([H])C1([H])C(=O)N([H])C([H])([H])C1([H])[H]",
+        "energy": -38.59232077113981,
+        "descriptors": {
+          "NPR1": 0.37632928762251433,
+          "NPR2": 0.7306392639555201,
+          "PMI1": 3035.4109181910326,
+          "PMI2": 5893.21764745095,
+          "PMI3": 8065.837600276731,
+          "RadiusOfGyration": 4.589108203613719
+        },
+        "passed_lipinski": true,
+        "pka_mean": 7.387499809265137,
+        "pka_std": 0.3499155044555664,
+        "confident": true
+      },
+      {
+        "smiles": "[H]C(=O)C([H])(N([H])C(=O)C([H])(N([H])C(=O)OC([H])([H])c1c([H])c([H])c([H])c([H])c1[H])C([H])([H])C([H])(C([H])([H])[H])C([H])([H])[H])C([H])([H])C1([H])C(=O)N(C([H])([H])[H])C([H])([H])C1([H])[H]",
+        "energy": -29.20226262452536,
+        "descriptors": {
+          "NPR1": 0.3924966242927954,
+          "NPR2": 0.7806048208540183,
+          "PMI1": 3096.321346765379,
+          "PMI2": 6158.023332183414,
+          "PMI3": 7888.784654758149,
+          "RadiusOfGyration": 4.531048307530583
+        },
+        "passed_lipinski": true,
+        "pka_mean": 6.394941329956055,
+        "pka_std": 0.30751338601112366,
+        "confident": true
+      },
+      {
+        "smiles": "[H]c1c([H])c([H])c(N2[Se]c3c([H])c([H])c([H])c([H])c32)c([H])c1[H]",
+        "energy": Infinity,
+        "descriptors": {
+          "NPR1": 0.2606585096808782,
+          "NPR2": 0.7544258020366936,
+          "PMI1": 463.52172045898266,
+          "PMI2": 1341.5742541719496,
+          "PMI3": 1778.2719659775082,
+          "RadiusOfGyration": 2.697815584723341
+        },
+        "passed_lipinski": true,
+        "pka_mean": 4.121933937072754,
+        "pka_std": 0.19347015023231506,
+        "confident": true
+      },
+      {
+        "smiles": "[H]C1=C([H])C([H])=C(C2=C([H])C([H])=C([H])C([H])=C2[H])C([H])=C1[H]",
+        "energy": 33.76405800870216,
+        "descriptors": {
+          "NPR1": 0.17860747938277335,
+          "NPR2": 0.9970926027472826,
+          "PMI1": 177.73168906349676,
+          "PMI2": 992.2034231231924,
+          "PMI3": 995.0965641399614,
+          "RadiusOfGyration": 2.6494641337665334
+        },
+        "passed_lipinski": true,
+        "pka_mean": 3.5380616188049316,
+        "pka_std": 0.19016002118587494,
         "confident": true
       }
     ]
