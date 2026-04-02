@@ -1,0 +1,47 @@
+{
+  "alzheimers": {
+    "disease": "Alzheimer's",
+    "target": {
+      "uniprot": "",
+      "pdb_id": "4B7R",
+      "location": "CNS",
+      "rationale": "Keyword-based fallback identification.",
+      "name": "BACE1"
+    },
+    "num_candidates": 2,
+    "top_5": [
+      {
+        "smiles": "[H]c1nc(N([H])[H])sc1C(=O)N([H])c1c([H])c2c(c([H])c1F)S(=O)(=O)C([H])([H])C2(C([H])([H])[H])C([H])([H])[H]",
+        "energy": -11.82389396633112,
+        "descriptors": {
+          "NPR1": 0.1415614673619713,
+          "NPR2": 0.8935269803514023,
+          "PMI1": 851.9673188647857,
+          "PMI2": 5377.56354161552,
+          "PMI3": 6018.356087580764,
+          "RadiusOfGyration": 4.150946149329118
+        },
+        "passed_lipinski": true,
+        "pka_mean": 6.811938285827637,
+        "pka_std": 0.34333446621894836,
+        "confident": true
+      },
+      {
+        "smiles": "[H]c1nc(N([H])[H])sc1C(=O)N([H])c1c([H])c([H])c(S(=O)(=O)C([H])([H])[H])c(F)c1F",
+        "energy": -22.589332884808208,
+        "descriptors": {
+          "NPR1": 0.10123521822115052,
+          "NPR2": 0.9282067808641109,
+          "PMI1": 568.5496377650313,
+          "PMI2": 5212.92528730955,
+          "PMI3": 5616.124978592157,
+          "RadiusOfGyration": 4.1347317503493795
+        },
+        "passed_lipinski": true,
+        "pka_mean": 5.782197952270508,
+        "pka_std": 0.3273417353630066,
+        "confident": true
+      }
+    ]
+  }
+}

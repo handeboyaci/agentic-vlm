@@ -55,3 +55,4 @@ class LabManagerConfig:
   temperature: float = 0.1
   scoring: str = "gnn"
   generations_per_round: int = 3
+  output_path: str = ""

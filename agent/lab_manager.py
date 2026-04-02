@@ -119,17 +119,17 @@ class LabManager:
     try:
       data = json.loads(response.text)
       decision = RoutingDecision(**data)
-      logger.info(f"LLM routed to phase: {decision.phase.value}")
+      logger.info("LLM routed to phase: %s", decision.phase.value)
       return decision
     except Exception as e:
-      logger.error(f"Failed to parse LLM routing response: {response.text}")
-      raise ValueError(f"LLM routing failed: {e}")
+      logger.error("Failed to parse LLM routing response: %s", response.text)
+      raise ValueError("LLM routing failed: %s" % e)
 
   def _get_feedback(
     self, predictions: list[dict[str, Any]], iteration: int
   ) -> FeedbackDecision:
     """Ask the LLM whether to continue evolving or stop."""
-    logger.info(f"Asking LLM for feedback on iteration {iteration}...")
+    logger.info("Asking LLM for feedback on iteration %d...", iteration)
 
     system_instruction = f"""
     You are evaluating round {iteration} of a drug discovery pipeline.
@@ -163,11 +163,16 @@ class LabManager:
       data = json.loads(response.text)
       decision = FeedbackDecision(**data)
       logger.info(
-        f"LLM feedback decision: {decision.action.value} ({decision.reasoning})"
+        "LLM feedback: %s (%s)",
+        decision.action.value,
+        decision.reasoning,
       )
       return decision
     except Exception as e:
-      logger.warning(f"Failed to parse LLM feedback, defaulting to CONTINUE: {e}")
+      logger.warning(
+        "Failed to parse LLM feedback, defaulting to CONTINUE: %s",
+        e,
+      )
       return FeedbackDecision(
         action=FeedbackAction.CONTINUE, reasoning="Fallback due to parsing error."
       )
@@ -176,14 +181,15 @@ class LabManager:
     """Execute the pipeline driven by LLM decisions."""
     routing = self._route_entry(prompt)
 
-    target = {}
-    constraints = {}
-    mols = []
+    target: dict[str, Any] = {}
+    constraints: dict[str, Any] = {}
+    mols: list[Chem.Mol] = []
+    stop_reason = "max_iterations reached"
 
     # ── Node 1: Scout (Target Identification) ──
     if routing.phase == EntryPhase.SCOUT:
       disease = routing.disease_name or "Unknown Disease"
-      logger.info(f"Running SCOUT for disease: {disease}")
+      logger.info("Running SCOUT for disease: %s", disease)
       target, constraints = self.scout_agent.execute(disease)
       routing.target_name = target.get("name")
 
@@ -200,7 +206,7 @@ class LabManager:
     if routing.phase in (EntryPhase.SCOUT, EntryPhase.SEED):
       target_name = routing.target_name or "Unknown Target"
       disease = routing.disease_name or "Unknown Disease"
-      logger.info(f"Running SEED for target: {target_name}")
+      logger.info("Running SEED for target: %s", target_name)
       seed_smiles = fetch_seed_molecules(
         target_name=target_name,
         disease=disease,
@@ -214,7 +220,7 @@ class LabManager:
         logger.warning("No SMILES available to filter. Stopping.")
         return []
 
-      logger.info(f"Running FILTER on {len(smiles_list)} molecules")
+      logger.info("Running FILTER on %d molecules", len(smiles_list))
       mols = self.chemist_agent.execute(smiles_list, constraints)
     else:
       # SCORE phase provided exactly
@@ -226,35 +232,55 @@ class LabManager:
       return []
 
     # ── Iterative Feedback Loop ──
-    all_results = []
-    scored_smiles = set()
+    all_results: list[dict[str, Any]] = []
+    scored_smiles: set[str] = set()
     population = mols
     prev_fitness = [1.0] * len(population)
+    iterations_run = 0
 
     # Number of Architect mutations per LLM evaluation
     gens_per_round = self.config.generations_per_round
 
     for iteration in range(1, self.config.max_iterations + 1):
+      iterations_run = iteration
       logger.info(
-        f"── Process Loop Iteration {iteration}/{self.config.max_iterations} ──"
+        "── Process Loop Iteration %d/%d ──",
+        iteration,
+        self.config.max_iterations,
       )
 
       # ── Node 4: Architect (Evolution) ──
-      # We only evolve if we aren't in the very first iteration of a SCORE-only request
       if not (iteration == 1 and routing.phase == EntryPhase.SCORE) and iteration > 1:
         logger.info("Running EVOLVE (Architect)")
         for _ in range(gens_per_round):
           population = self.architect_agent.execute(population, prev_fitness)
 
         # ── Optimization: Post-Architect Filter ──
-        # Re-filter newly mutated compounds to ensure drug-likeness
         logger.info("Running post-evolution FILTER (Chemist)")
         pop_smiles = [Chem.MolToSmiles(m) for m in population]
         population = self.chemist_agent.execute(pop_smiles, constraints)
 
+      # ── Dead-Population Recovery ──
       if not population:
-        logger.warning("Population died out.")
-        break
+        if all_results:
+          logger.warning(
+            "Population died out. Re-seeding from top %d previously scored molecules.",
+            min(5, len(all_results)),
+          )
+          top_prev = sorted(
+            all_results,
+            key=lambda x: x.get("pka_mean", 0),
+            reverse=True,
+          )[:5]
+          population = [
+            Chem.MolFromSmiles(r["smiles"])
+            for r in top_prev
+            if Chem.MolFromSmiles(r["smiles"]) is not None
+          ]
+        if not population:
+          stop_reason = "population died out"
+          logger.warning("Population died out with no recovery.")
+          break
 
       # ── Node 5: Physicist (3D Conformations) ──
       logger.info("Running 3D GEOMETRY (Physicist)")
@@ -262,6 +288,7 @@ class LabManager:
       scored_mols = [r["mol"] for r in phys_results if "mol" in r]
 
       if not scored_mols:
+        stop_reason = "no scoreable molecules"
         break
 
       # ── Node 6: Predictor (Binding Affinity) ──
@@ -269,7 +296,7 @@ class LabManager:
       protein_id = target.get("pdb_id") or target.get("uniprot")
       predictions = self.predictor_agent.execute(scored_mols, pdb_id=protein_id)
 
-      # Prepare fitness for next round and track unique results
+      # Prepare fitness for next round
       prev_fitness = []
       pred_map = {p["smiles"]: p for p in predictions}
 
@@ -284,18 +311,45 @@ class LabManager:
           p = pred_map.get(smi)
           if p:
             res.update(p)
-            # Remove mol object for cleaner return, keeping smiles
             clean_res = {k: v for k, v in res.items() if k != "mol"}
             all_results.append(clean_res)
             scored_smiles.add(smi)
 
       # ── Decision Edge: LLM Feedback ──
       if routing.phase == EntryPhase.SCORE and self.config.max_iterations == 1:
-        break  # Just score and exit
+        stop_reason = "SCORE-only mode"
+        break
 
       feedback = self._get_feedback(predictions, iteration)
       if feedback.action == FeedbackAction.STOP:
+        stop_reason = feedback.reasoning
         break
 
     all_results.sort(key=lambda x: x.get("pka_mean", 0), reverse=True)
+
+    # ── Structured Completion Summary ──
+    top_smi = all_results[0]["smiles"] if all_results else "N/A"
+    top_pka = all_results[0].get("pka_mean", 0) if all_results else 0
+    logger.info(
+      "\n══════════════════════════════════════════\n"
+      "  Lab Manager Complete\n"
+      "  Iterations run: %d\n"
+      "  Molecules explored: %d\n"
+      "  Stop reason: %s\n"
+      "  Top candidate: %s (pKa=%.2f)\n"
+      "══════════════════════════════════════════",
+      iterations_run,
+      len(all_results),
+      stop_reason,
+      top_smi,
+      top_pka,
+    )
+
+    # ── Auto-save if configured ──
+    if self.config.output_path and all_results:
+      output = {"prompt": prompt, "candidates": all_results}
+      with open(self.config.output_path, "w") as f:
+        json.dump(output, f, indent=2)
+      logger.info("Results auto-saved to %s", self.config.output_path)
+
     return all_results

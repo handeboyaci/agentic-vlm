@@ -56,7 +56,7 @@ class DrugDiscoveryPipeline:
     disease_name: str,
     initial_smiles: list | None = None,
     generations: int = 5,
-  ) -> list[dict[str, Any]]:
+  ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     logger.info("Pipeline starting for disease: %s", disease_name)
 
     # 1. Scout: target identification
@@ -85,7 +85,7 @@ class DrugDiscoveryPipeline:
     # 2. Chemist: filtering
     mols = self.chemist_agent.execute(initial_smiles, constraints)
     if not mols:
-      return [], target
+      return ([], target)
 
     all_results = []
     scored_smiles = set()

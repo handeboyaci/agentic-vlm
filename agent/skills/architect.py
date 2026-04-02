@@ -5,7 +5,7 @@ import random
 from typing import Optional
 
 from rdkit import Chem
-from rdkit.Chem import AllChem, BRICS
+from rdkit.Chem import AllChem, BRICS, DataStructs
 
 logger = logging.getLogger(__name__)
 
@@ -142,8 +142,13 @@ def evolve_generation(
 
   next_gen = list(parents)  # elitism: seed next generation with top survivors
   target_size = len(population)
+  max_attempts = target_size * 10
+  attempts = 0
 
-  while len(next_gen) < target_size:
+  # Pre-compute fingerprints for diversity checking
+  fp_list = [_mol_to_fp(m) for m in next_gen]
+
+  while len(next_gen) < target_size and attempts < max_attempts:
     parent = random.choice(parents)
     if random.random() < mutation_rate:
       child = mutate_molecule(parent)
@@ -152,7 +157,40 @@ def evolve_generation(
       child = crossover_molecules(parent, other)
 
     if child is not None:
-      next_gen.append(child)
+      child_fp = _mol_to_fp(child)
+      if child_fp is not None and _is_diverse(child_fp, fp_list):
+        next_gen.append(child)
+        fp_list.append(child_fp)
+      elif child_fp is None:
+        # Can't compute FP; accept anyway
+        next_gen.append(child)
+    attempts += 1
 
-  logger.debug("evolve_generation: produced %d molecules.", len(next_gen))
+  if len(next_gen) < target_size:
+    logger.warning(
+      "evolve_generation: only produced %d/%d molecules after %d attempts.",
+      len(next_gen),
+      target_size,
+      max_attempts,
+    )
+
   return next_gen
+
+
+def _mol_to_fp(mol: Chem.Mol):
+  """Compute Morgan fingerprint for diversity checking."""
+  try:
+    return AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=1024)
+  except Exception:
+    return None
+
+
+def _is_diverse(fp, fp_list, threshold: float = 0.9) -> bool:
+  """Return True if fp is sufficiently different from all in fp_list."""
+  for existing in fp_list:
+    if existing is None:
+      continue
+    sim = DataStructs.TanimotoSimilarity(fp, existing)
+    if sim > threshold:
+      return False
+  return True

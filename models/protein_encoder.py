@@ -1,6 +1,10 @@
+import logging
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+logger = logging.getLogger(__name__)
 
 
 class ProteinEncoder(nn.Module):
@@ -42,4 +46,8 @@ def precompute_esm2_embedding(sequence: str) -> torch.Tensor:
   """Mock ESM-2 embedding for demonstration if models not available."""
   # In production, this would use a real ESM-2 model
   # Returns a (len(sequence), 1280) tensor
+  logger.warning(
+    "Using MOCK ESM-2 embeddings (random noise). "
+    "Install facebook/esm for real protein context."
+  )
   return torch.randn(len(sequence), 1280)
