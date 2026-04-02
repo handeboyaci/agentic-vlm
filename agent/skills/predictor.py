@@ -49,19 +49,38 @@ def load_model(
   dropout: float = 0.1,
   device: torch.device | None = None,
 ) -> GNNPredictor:
-  """Load a GNNPredictor from *model_path*."""
+  """Load a GNNPredictor from *model_path*.
+
+  Auto-detects whether the checkpoint was trained with a protein
+  encoder by inspecting the state dict keys.
+  """
   if device is None:
     device = torch.device(
       "cuda" if torch.cuda.is_available() else "cpu",
     )
+
+  # Peek at checkpoint to detect protein encoder weights
+  use_protein = False
+  if os.path.exists(model_path):
+    state = torch.load(model_path, map_location=device)
+    use_protein = any(k.startswith("protein_encoder.") for k in state)
+    if use_protein:
+      logger.info(
+        "Detected protein encoder weights in %s",
+        model_path,
+      )
+  else:
+    state = None
+
   model = GNNPredictor(
     atom_feat_dim=atom_feat_dim,
     hidden_dim=hidden_dim,
     n_layers=n_layers,
     dropout=dropout,
+    use_protein_encoder=use_protein,
   ).to(device)
-  if os.path.exists(model_path):
-    state = torch.load(model_path, map_location=device)
+
+  if state is not None:
     model.load_state_dict(state, strict=False)
     logger.info("Loaded model from %s", model_path)
   model.eval()
@@ -100,7 +119,7 @@ def score_molecule(
         if pdb_path:
           seq = extract_pocket_seq(pdb_path)
           if seq:
-            emb = precompute_esm2_embedding(seq)
+            emb = precompute_esm2_embedding(seq, cache_key=pdb_id)
             _PROTEIN_EMB_CACHE[pdb_id] = emb
             protein_embs = [emb.to(device)]
       except Exception:

@@ -129,7 +129,10 @@ class LPPDBBind(InMemoryDataset):
       urllib.request.urlretrieve(CSV_URL, dst)
 
   def process(self):
-    df = pd.read_csv(os.path.join(self.raw_dir, "LP_PDBBind.csv"), index_col=0)
+    df = pd.read_csv(
+      os.path.join(self.raw_dir, "LP_PDBBind.csv"),
+      index_col=0,
+    )
 
     # Apply LP-PDBBind recommended cleanup:
     # - CL1/CL2/CL3: remove complexes with known data quality issues
@@ -137,14 +140,52 @@ class LPPDBBind(InMemoryDataset):
     cl_col = self.clean_level  # e.g. "CL1"
     if cl_col in df.columns:
       df = df[df[cl_col] & ~df["covalent"]]
-      logger.info("After %s + non-covalent filter: %d complexes", cl_col, len(df))
+      logger.info(
+        "After %s + non-covalent filter: %d complexes",
+        cl_col,
+        len(df),
+      )
 
     df_split = df[df["new_split"] == self.split].head(
       self.max_samples if self.max_samples > 0 else len(df)
     )
+
+    # Optionally load ESM-2 for precomputing protein embeddings
+    esm_fn = None
+    if self.precompute_esm:
+      try:
+        from models.protein_encoder import (
+          precompute_esm2_embedding,
+        )
+
+        esm_fn = precompute_esm2_embedding
+        logger.info(
+          "Precomputing ESM-2 embeddings for %s split",
+          self.split,
+        )
+      except Exception as exc:
+        logger.warning("ESM-2 precomputation unavailable: %s", exc)
+
     data_list = []
-    for _, row in df_split.iterrows():
-      data_list.extend(
-        smiles_to_pyg(row["smiles"], float(row["value"]), str(row.get("seq", "")))
+    for pdb_id, row in df_split.iterrows():
+      pdb_id_str = str(pdb_id)
+      seq = str(row.get("seq", ""))
+      graphs = smiles_to_pyg(
+        row["smiles"],
+        float(row["value"]),
+        seq,
+        pdb_id=pdb_id_str,
       )
+
+      # Attach ESM-2 embedding if available
+      if esm_fn and seq and len(seq) > 5:
+        try:
+          emb = esm_fn(seq, cache_key=pdb_id_str)
+          for g in graphs:
+            g.protein_emb = emb
+        except Exception:
+          pass
+
+      data_list.extend(graphs)
+
     self.save(data_list, self.processed_paths[0])
