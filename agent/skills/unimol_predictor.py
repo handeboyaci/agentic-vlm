@@ -7,6 +7,8 @@ Supports both ligand-only and pocket-aware scoring modes:
   them with the ligand for protein-aware scoring.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import tempfile

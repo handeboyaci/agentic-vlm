@@ -1,0 +1,32 @@
+{
+  "bace1": {
+    "label": "BACE1 (Alzheimer's)",
+    "pdb_id": "4B7R",
+    "correlation": {
+      "spearman_r": null,
+      "p_value": null,
+      "n": 0
+    },
+    "compounds": []
+  },
+  "egfr": {
+    "label": "EGFR (Cancer)",
+    "pdb_id": "1M17",
+    "correlation": {
+      "spearman_r": null,
+      "p_value": null,
+      "n": 0
+    },
+    "compounds": []
+  },
+  "mpro": {
+    "label": "MPro (COVID-19)",
+    "pdb_id": "6LU7",
+    "correlation": {
+      "spearman_r": null,
+      "p_value": null,
+      "n": 0
+    },
+    "compounds": []
+  }
+}

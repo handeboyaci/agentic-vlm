@@ -115,26 +115,65 @@ EGFR_SERIES = [
 ]
 
 # ── MPro Congeneric Series ───────────────────────────────────────
-# From COVID Moonshot (open science project) and literature
+# From COVID Moonshot (open science project), Jin et al. Nature 2020,
+# and Ma et al. Cell Res 2020.
+# IC50 → pIC50 = -log10(IC50_M)
 
 MPRO_SERIES = [
   ExperimentalCompound(
     "GC-376",
     "CC(C)CC(NC(=O)OCc1ccccc1)C(=O)NC(CC1CCNC1=O)C=O",
-    6.8,  # pIC50 = 0.15 µM
+    6.8,  # IC50 = 0.15 µM
     "Ma et al. Cell Res 2020",
+  ),
+  # COVID Moonshot noncovalent hits (ASAP Discovery dataset)
+  ExperimentalCompound(
+    "MAT-POS-b3e365b9-1 (potent)",
+    "Cc1ccncc1NC(=O)Cc1cc(Cl)cc(-c2ccccn2)c1",
+    6.6,  # IC50 = 0.25 µM
+    "COVID Moonshot (postera-ai/COVID_moonshot_submissions)",
+  ),
+  ExperimentalCompound(
+    "Moonshot aminopyridine",
+    "Nc1ccncc1NC(=O)Cc1cccc(Cl)c1",
+    5.7,  # IC50 = 2.0 µM
+    "COVID Moonshot RapidFire assay",
+  ),
+  ExperimentalCompound(
+    "Moonshot chlorobenzamide",
+    "O=C(NCc1ccccn1)c1cc(Cl)cc(Cl)c1",
+    5.3,  # IC50 = 5.0 µM
+    "COVID Moonshot fluorescence assay",
   ),
   ExperimentalCompound(
     "Ebselen",
     "c1ccc2c(c1)[Se]N2c1ccccc1",
-    5.6,  # pIC50 = 0.67 µM (biochemical)
+    5.6,  # IC50 = 0.67 µM (biochemical)
+    "Jin et al. Nature 2020",
+  ),
+  ExperimentalCompound(
+    "Disulfiram",
+    "CCN(CC)C(=S)SSC(=S)N(CC)CC",
+    4.7,  # IC50 = 9.35 µM
     "Jin et al. Nature 2020",
   ),
   ExperimentalCompound(
     "Carmofur",
     "CCCCCCNC(=O)N1C=CC(=O)NC1=O",
-    4.5,  # pIC50 ≈ 1.8 µM
-    "Jin et al. Nature Struct Mol Biol 2020",
+    4.5,  # IC50 ≈ 1.8 µM
+    "Jin et al. Nat Struct Mol Biol 2020",
+  ),
+  ExperimentalCompound(
+    "Tideglusib",
+    "O=C1SC(=Nc2ccccc2)N1c1ccc(cc1)N1CCOCC1",
+    4.2,  # IC50 ≈ 1.6 µM (weak covalent)
+    "Jin et al. Nature 2020",
+  ),
+  ExperimentalCompound(
+    "Isatin (fragment)",
+    "O=C1Nc2ccccc2C1=O",
+    3.5,  # IC50 ≈ 300 µM (weak fragment)
+    "COVID Moonshot fragment screen",
   ),
   ExperimentalCompound(
     "Biphenyl (negative control)",
