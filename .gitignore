@@ -42,5 +42,8 @@ Thumbs.db
 data/rag_vectordb/
 
 # Large model files
+*.zip
 unimol_binding_model.zip
 models/unimol_binding_model/
+models/unimol_pocket_model/
+data/esm_cache/

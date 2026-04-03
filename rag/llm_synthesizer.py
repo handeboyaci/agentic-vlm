@@ -61,7 +61,7 @@ def _synthesise_with_gemini(disease: str, context: str) -> Optional[dict[str, An
     import google.generativeai as genai
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-flash-latest")
+    model = genai.GenerativeModel("gemini-2.0-flash")
     resp = model.generate_content(
       f"{SYSTEM_PROMPT}\n\nDisease: {disease}\nLiterature:\n{context}",
       generation_config=genai.GenerationConfig(
