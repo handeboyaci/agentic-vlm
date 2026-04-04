@@ -9,14 +9,8 @@ from typing import Any, Optional
 
 import google.generativeai as genai
 from pydantic import BaseModel, Field
-from rdkit import Chem
 
-from agent.chemist_agent import ChemistAgent
-from agent.architect_agent import ArchitectAgent
-from agent.physicist_agent import PhysicistAgent
-from agent.predictor_agent import PredictorAgent
-from agent.scout_agent import ScoutAgent
-from agent.skills.seed_molecules import fetch_seed_molecules
+from agent.pipeline import DrugDiscoveryPipeline
 from config.settings import (
   ArchitectConfig,
   ChemistConfig,
@@ -62,7 +56,11 @@ class FeedbackDecision(BaseModel):
 
 
 class LabManager:
-  """LLM-driven orchestrator for the drug discovery pipeline."""
+  """LLM-driven orchestrator targeting drug discovery.
+  
+  Wraps the deterministic ``DrugDiscoveryPipeline``, injecting
+  LLM-powered routing and feedback decision making.
+  """
 
   def __init__(
     self,
@@ -74,13 +72,17 @@ class LabManager:
     scout_config: Optional[ScoutConfig] = None,
   ) -> None:
     self.config = config or LabManagerConfig()
-    self.scout_agent = ScoutAgent(scout_config or ScoutConfig())
-    self.chemist_agent = ChemistAgent(chemist_config or ChemistConfig())
-    self.architect_agent = ArchitectAgent(architect_config or ArchitectConfig())
-    self.physicist_agent = PhysicistAgent(physicist_config or PhysicistConfig())
-    self.predictor_agent = PredictorAgent(
-      predictor_config or PredictorConfig(),
+    
+    # Initialize the underlying deterministic pipeline
+    self.pipeline = DrugDiscoveryPipeline(
+      chemist_config=chemist_config,
+      architect_config=architect_config,
+      physicist_config=physicist_config,
+      predictor_config=predictor_config,
+      scout_config=scout_config,
+      max_feedback_rounds=self.config.max_iterations,
       scoring=self.config.scoring,
+      output_path=self.config.output_path,
     )
 
     # Initialize Gemini model
@@ -127,8 +129,12 @@ class LabManager:
 
   def _get_feedback(
     self, predictions: list[dict[str, Any]], iteration: int
-  ) -> FeedbackDecision:
-    """Ask the LLM whether to continue evolving or stop."""
+  ) -> bool:
+    """Ask the LLM whether to continue evolving or stop.
+    
+    Returns:
+      True to continue, False to stop.
+    """
     logger.info("Asking LLM for feedback on iteration %d...", iteration)
 
     system_instruction = f"""
@@ -167,189 +173,33 @@ class LabManager:
         decision.action.value,
         decision.reasoning,
       )
-      return decision
+      return decision.action == FeedbackAction.CONTINUE
     except Exception as e:
       logger.warning(
         "Failed to parse LLM feedback, defaulting to CONTINUE: %s",
         e,
       )
-      return FeedbackDecision(
-        action=FeedbackAction.CONTINUE, reasoning="Fallback due to parsing error."
-      )
+      return True
 
   def run(self, prompt: str) -> list[dict[str, Any]]:
     """Execute the pipeline driven by LLM decisions."""
     routing = self._route_entry(prompt)
 
-    target: dict[str, Any] = {}
-    constraints: dict[str, Any] = {}
-    mols: list[Chem.Mol] = []
-    stop_reason = "max_iterations reached"
-
-    # ── Node 1: Scout (Target Identification) ──
-    if routing.phase == EntryPhase.SCOUT:
-      disease = routing.disease_name or "Unknown Disease"
-      logger.info("Running SCOUT for disease: %s", disease)
-      target, constraints = self.scout_agent.execute(disease)
-      routing.target_name = target.get("name")
-
-    # Ensure we have default constraints if none found/provided
-    if not constraints:
-      constraints = {
-        "max_mw": self.chemist_agent.config.lipinski_max_mw,
-        "max_logp": self.chemist_agent.config.lipinski_max_logp,
-        "max_hbd": self.chemist_agent.config.lipinski_max_hbd,
-        "max_hba": self.chemist_agent.config.lipinski_max_hba,
-      }
-
-    # ── Node 2: Seed (Fetch Initial Molecules) ──
-    if routing.phase in (EntryPhase.SCOUT, EntryPhase.SEED):
-      target_name = routing.target_name or "Unknown Target"
-      disease = routing.disease_name or "Unknown Disease"
-      logger.info("Running SEED for target: %s", target_name)
-      seed_smiles = fetch_seed_molecules(
-        target_name=target_name,
-        disease=disease,
-      )
-      routing.smiles = seed_smiles
-
-    # ── Node 3: Chemist (Filter Molecules) ──
-    if routing.phase in (EntryPhase.SCOUT, EntryPhase.SEED, EntryPhase.FILTER):
-      smiles_list = routing.smiles or []
-      if not smiles_list:
-        logger.warning("No SMILES available to filter. Stopping.")
-        return []
-
-      logger.info("Running FILTER on %d molecules", len(smiles_list))
-      mols = self.chemist_agent.execute(smiles_list, constraints)
+    disease = routing.disease_name or "Unknown Disease"
+    initial_smiles = routing.smiles
+    
+    # If the user explicitly requested SCORE mode, disable evolution
+    if routing.phase == EntryPhase.SCORE:
+      generations = 0
     else:
-      # SCORE phase provided exactly
-      smiles_list = routing.smiles or []
-      mols = [Chem.MolFromSmiles(s) for s in smiles_list if Chem.MolFromSmiles(s)]
-
-    if not mols:
-      logger.warning("No valid molecules survived filtering. Stopping.")
-      return []
-
-    # ── Iterative Feedback Loop ──
-    all_results: list[dict[str, Any]] = []
-    scored_smiles: set[str] = set()
-    population = mols
-    prev_fitness = [1.0] * len(population)
-    iterations_run = 0
-
-    # Number of Architect mutations per LLM evaluation
-    gens_per_round = self.config.generations_per_round
-
-    for iteration in range(1, self.config.max_iterations + 1):
-      iterations_run = iteration
-      logger.info(
-        "── Process Loop Iteration %d/%d ──",
-        iteration,
-        self.config.max_iterations,
-      )
-
-      # ── Node 4: Architect (Evolution) ──
-      if not (iteration == 1 and routing.phase == EntryPhase.SCORE) and iteration > 1:
-        logger.info("Running EVOLVE (Architect)")
-        for _ in range(gens_per_round):
-          population = self.architect_agent.execute(population, prev_fitness)
-
-        # ── Optimization: Post-Architect Filter ──
-        logger.info("Running post-evolution FILTER (Chemist)")
-        pop_smiles = [Chem.MolToSmiles(m) for m in population]
-        population = self.chemist_agent.execute(pop_smiles, constraints)
-
-      # ── Dead-Population Recovery ──
-      if not population:
-        if all_results:
-          logger.warning(
-            "Population died out. Re-seeding from top %d previously scored molecules.",
-            min(5, len(all_results)),
-          )
-          top_prev = sorted(
-            all_results,
-            key=lambda x: x.get("pka_mean", 0),
-            reverse=True,
-          )[:5]
-          population = [
-            Chem.MolFromSmiles(r["smiles"])
-            for r in top_prev
-            if Chem.MolFromSmiles(r["smiles"]) is not None
-          ]
-        if not population:
-          stop_reason = "population died out"
-          logger.warning("Population died out with no recovery.")
-          break
-
-      # ── Node 5: Physicist (3D Conformations) ──
-      logger.info("Running 3D GEOMETRY (Physicist)")
-      phys_results = self.physicist_agent.execute(population)
-      scored_mols = [r["mol"] for r in phys_results if "mol" in r]
-
-      if not scored_mols:
-        stop_reason = "no scoreable molecules"
-        break
-
-      # ── Node 6: Predictor (Binding Affinity) ──
-      logger.info("Running PREDICTOR (Scoring)")
-      protein_id = target.get("pdb_id") or target.get("uniprot")
-      predictions = self.predictor_agent.execute(scored_mols, pdb_id=protein_id)
-
-      # Prepare fitness for next round
-      prev_fitness = []
-      pred_map = {p["smiles"]: p for p in predictions}
-
-      for mol in population:
-        smiles = Chem.MolToSmiles(mol)
-        score = pred_map.get(smiles, {}).get("pka_mean", 0.0)
-        prev_fitness.append(score)
-
-      for res in phys_results:
-        smi = res["smiles"]
-        if smi not in scored_smiles:
-          p = pred_map.get(smi)
-          if p:
-            res.update(p)
-            clean_res = {k: v for k, v in res.items() if k != "mol"}
-            all_results.append(clean_res)
-            scored_smiles.add(smi)
-
-      # ── Decision Edge: LLM Feedback ──
-      if routing.phase == EntryPhase.SCORE and self.config.max_iterations == 1:
-        stop_reason = "SCORE-only mode"
-        break
-
-      feedback = self._get_feedback(predictions, iteration)
-      if feedback.action == FeedbackAction.STOP:
-        stop_reason = feedback.reasoning
-        break
-
-    all_results.sort(key=lambda x: x.get("pka_mean", 0), reverse=True)
-
-    # ── Structured Completion Summary ──
-    top_smi = all_results[0]["smiles"] if all_results else "N/A"
-    top_pka = all_results[0].get("pka_mean", 0) if all_results else 0
-    logger.info(
-      "\n══════════════════════════════════════════\n"
-      "  Lab Manager Complete\n"
-      "  Iterations run: %d\n"
-      "  Molecules explored: %d\n"
-      "  Stop reason: %s\n"
-      "  Top candidate: %s (pKa=%.2f)\n"
-      "══════════════════════════════════════════",
-      iterations_run,
-      len(all_results),
-      stop_reason,
-      top_smi,
-      top_pka,
+      generations = self.config.generations_per_round
+      
+    # Delegate to the deterministic pipeline, injecting the LLM feedback
+    results, target_info = self.pipeline.run(
+      disease_name=disease,
+      initial_smiles=initial_smiles,
+      generations=generations,
+      feedback_fn=self._get_feedback,
     )
-
-    # ── Auto-save if configured ──
-    if self.config.output_path and all_results:
-      output = {"prompt": prompt, "candidates": all_results}
-      with open(self.config.output_path, "w") as f:
-        json.dump(output, f, indent=2)
-      logger.info("Results auto-saved to %s", self.config.output_path)
-
-    return all_results
+    
+    return results

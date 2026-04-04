@@ -1,11 +1,18 @@
 """End-to-end drug discovery pipeline orchestrator.
 
-Unified orchestrator combining the deterministic pipeline with
-LabManager's agentic features:
+Single source of truth for the drug-discovery loop:
+  Scout → Chemist → (Architect → Chemist → Physicist →
+  Predictor) × rounds.
+
+Features:
   - Post-evolution chemist filtering
   - Dead-population recovery from previously scored molecules
+  - Pluggable feedback callback (default: confidence heuristic)
   - Structured completion summary logging
   - Auto-save to JSON
+
+``LabManager`` wraps this class, injecting LLM-powered routing
+and feedback decisions as the *feedback_fn* callback.
 """
 
 from __future__ import annotations
@@ -15,7 +22,7 @@ import json
 import logging
 import os
 import sys
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from rdkit import Chem
 
@@ -76,8 +83,21 @@ class DrugDiscoveryPipeline:
     disease_name: str,
     initial_smiles: list | None = None,
     generations: int = 5,
+    feedback_fn: Callable[
+      [list[dict[str, Any]], int], bool
+    ]
+    | None = None,
   ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Execute the pipeline.
+
+    Args:
+      disease_name: Disease to target.
+      initial_smiles: Optional seed SMILES. If None, auto-
+        fetched from ChEMBL.
+      generations: Architect evolution generations per round.
+      feedback_fn: Optional callback ``(predictions, round)``
+        → ``True`` to continue, ``False`` to stop.  Defaults
+        to a confidence-based heuristic.
 
     Returns:
       Tuple of (sorted results list, target info dict).
@@ -115,9 +135,44 @@ class DrugDiscoveryPipeline:
 
     all_results: list[dict[str, Any]] = []
     scored_smiles: set[str] = set()
+
+    # ── 4. Baseline Scoring ───────────────────────────────
+    logger.info("Running baseline scoring for initial population...")
+    phys_results = self.physicist_agent.execute(mols)
+    scored_mols = [r["mol"] for r in phys_results if "mol" in r]
+    
+    protein_id = target.get("pdb_id") or target.get("uniprot")
+    if scored_mols:
+      predictions = self.predictor_agent.execute(scored_mols, pdb_id=protein_id)
+      pred_map = {p["smiles"]: p for p in predictions}
+      
+      for res in phys_results:
+        smi = res["smiles"]
+        if smi not in scored_smiles:
+          p = pred_map.get(smi)
+          if p:
+            res.update(p)
+            clean = {k: v for k, v in res.items() if k != "mol"}
+            all_results.append(clean)
+            scored_smiles.add(smi)
+    else:
+      predictions = []
+    
     population = mols
-    prev_fitness: list[float] | None = None
+    
+    # Extract fitness from baseline
+    prev_fitness: list[float] = []
+    for mol in population:
+      smiles = Chem.MolToSmiles(mol)
+      prev_fitness.append(pred_map.get(smiles, {}).get("pka_mean", 0.0) if 'pred_map' in locals() else 0.0)
+
     rounds_run = 0
+
+    # If generations=0, we're in SCORE-only mode
+    if generations == 0:
+      stop_reason = "SCORE-only mode (generations=0)"
+      all_results.sort(key=lambda r: r.get("pka_mean", 0), reverse=True)
+      return self._finalize(all_results, target, disease_name, 0, stop_reason)
 
     for feedback_round in range(1, self.max_feedback_rounds + 1):
       rounds_run = feedback_round
@@ -127,13 +182,13 @@ class DrugDiscoveryPipeline:
         self.max_feedback_rounds,
       )
 
-      fitness = prev_fitness or [1.0] * len(population)
+      fitness = prev_fitness
 
       for gen in range(generations):
-        # ── 4. Architect: evolution ──────────────────────
+        # ── 5. Architect: evolution ──────────────────────
         population = self.architect_agent.execute(population, fitness)
 
-        # ── 5. Chemist: post-evolution filter ────────────
+        # ── 6. Chemist: post-evolution filter ────────────
         pop_smiles = [Chem.MolToSmiles(m) for m in population]
         population = self.chemist_agent.execute(pop_smiles, constraints)
 
@@ -160,10 +215,10 @@ class DrugDiscoveryPipeline:
             logger.warning("Population died with no recovery possible.")
             break
 
-        # ── 6. Physicist: 3D conformations ───────────────
+        # ── 7. Physicist: 3D conformations ───────────────
         phys_results = self.physicist_agent.execute(population)
 
-        # ── 7. Predictor: binding affinity ───────────────
+        # ── 8. Predictor: binding affinity ───────────────
         scored_mols = [r["mol"] for r in phys_results if "mol" in r]
         if not scored_mols:
           break
@@ -190,30 +245,57 @@ class DrugDiscoveryPipeline:
               all_results.append(clean)
               scored_smiles.add(smi)
 
-      # ── Feedback: split by confidence ──────────────────
+      # ── Feedback: decide whether to continue ────────────
       if not predictions:
         stop_reason = "no predictions"
         break
 
-      uncertain = [p for p in predictions if not p["confident"]]
-      if not uncertain:
-        stop_reason = "all molecules confident"
-        logger.info("All molecules confident; stopping.")
-        break
+      if feedback_fn is not None:
+        # Pluggable callback (used by LabManager for LLM)
+        should_continue = feedback_fn(
+          predictions, feedback_round
+        )
+        if not should_continue:
+          stop_reason = "feedback callback stopped"
+          break
+      else:
+        # Default: confidence heuristic
+        uncertain = [
+          p for p in predictions if not p["confident"]
+        ]
+        if not uncertain:
+          stop_reason = "all molecules confident"
+          logger.info(
+            "All molecules confident; stopping."
+          )
+          break
 
+      # Build next-round population from uncertain mols
       population, prev_fitness = [], []
-      for u in uncertain:
-        m = Chem.MolFromSmiles(u["smiles"])
-        if m:
-          population.append(m)
-          prev_fitness.append(u.get("pka_mean", 0.0))
+      for p in predictions:
+        if feedback_fn is not None or not p["confident"]:
+          m = Chem.MolFromSmiles(p["smiles"])
+          if m:
+            population.append(m)
+            prev_fitness.append(
+              p.get("pka_mean", 0.0)
+            )
 
       if not population:
-        stop_reason = "no uncertain molecules to evolve"
+        stop_reason = "no molecules to evolve"
         break
 
     all_results.sort(key=lambda r: r.get("pka_mean", 0), reverse=True)
+    return self._finalize(all_results, target, disease_name, rounds_run, stop_reason)
 
+  def _finalize(
+    self,
+    all_results: list[dict[str, Any]],
+    target: dict[str, Any],
+    disease_name: str,
+    rounds_run: int,
+    stop_reason: str,
+  ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     # ── Structured completion summary ──────────────────────
     top_smi = all_results[0]["smiles"] if all_results else "N/A"
     top_pka = all_results[0].get("pka_mean", 0) if all_results else 0
