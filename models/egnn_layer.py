@@ -42,6 +42,8 @@ class EGNNLayer(nn.Module):
   def forward(self, h, x, edge_index, edge_attr):
     row, col = edge_index
     dist_sq = torch.sum((x[row] - x[col]) ** 2, dim=-1, keepdim=True)
+    # Add epsilon for numerical stability during backprop
+    dist_sq = dist_sq + 1e-8
     edge_input = torch.cat([h[row], h[col], dist_sq, edge_attr], dim=-1)
     m_ij = self.msg_mlp(edge_input)
 
