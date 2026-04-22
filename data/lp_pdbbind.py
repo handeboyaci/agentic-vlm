@@ -4,6 +4,7 @@ import logging
 import urllib.request
 import pandas as pd
 import torch
+import numpy as np
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from torch_geometric.data import Data, InMemoryDataset
@@ -26,6 +27,14 @@ def one_hot(val, choices):
 
 
 def atom_features(atom: Chem.Atom) -> list[float]:
+  # Extract partial charge (Gasteiger) if available
+  p_charge = 0.0
+  if atom.HasProp("_GasteigerCharge"):
+      try:
+          p_charge = float(atom.GetProp("_GasteigerCharge"))
+      except:
+          pass
+
   return (
     one_hot(atom.GetSymbol(), ATOM_TYPES)
     + one_hot(atom.GetDegree(), [0, 1, 2, 3, 4, 5])
@@ -46,9 +55,56 @@ def atom_features(atom: Chem.Atom) -> list[float]:
       int(atom.GetIsAromatic()),
       int(atom.IsInRing()),
       atom.GetMass() / 100.0,
+      p_charge  # New feature for electrostatics
     ]
     + one_hot(atom.GetTotalNumHs(), [0, 1, 2, 3, 4])
-  )  # 42-dim
+  )  # 44-dim
+
+
+def get_pocket_atoms(pdb_id: str, refined_dir: str = "data/refined-set") -> tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None:
+    pdb_path = os.path.join(refined_dir, pdb_id, f"{pdb_id}_pocket.pdb")
+    if not os.path.exists(pdb_path):
+        return None
+    
+    mol = Chem.MolFromPDBFile(pdb_path, removeHs=False, sanitize=True)
+    if mol is None: return None
+    
+    # Docking preparation: Add charges
+    try:
+        # Standard protein prep: add hydrogens then calculate charges
+        mol = Chem.AddHs(mol, addCoords=True)
+        AllChem.ComputeGasteigerCharges(mol)
+        # To keep graph size small, we remove non-polar hydrogens 
+        # but keep the charges we just calculated
+        mol = Chem.RemoveHs(mol)
+    except Exception as e:
+        logger.warning(f"Preparation failed for {pdb_id}: {e}")
+        return None
+        
+    if mol.GetNumConformers() == 0: return None
+    
+    feats = [atom_features(a) for a in mol.GetAtoms()]
+    conf = mol.GetConformer()
+    pos = [list(conf.GetAtomPosition(i)) for i in range(mol.GetNumAtoms())]
+    
+    res_indices = []
+    res_counter = -1
+    last_res_info = None
+    
+    for atom in mol.GetAtoms():
+        info = atom.GetPDBResidueInfo()
+        if info:
+            res_info = (info.GetResidueNumber(), info.GetResidueName(), info.GetChainId())
+            if res_info != last_res_info:
+                res_counter += 1
+                last_res_info = res_info
+        res_indices.append(max(0, res_counter))
+        
+    return (
+        torch.tensor(feats, dtype=torch.float),
+        torch.tensor(pos, dtype=torch.float),
+        torch.tensor(res_indices, dtype=torch.long)
+    )
 
 
 def smiles_to_pyg(
@@ -57,19 +113,28 @@ def smiles_to_pyg(
   protein_seq: str = "",
   n_conformers: int = 1,
   pdb_id: str = "",
+  pocket_data: tuple | None = None,
 ) -> list[Data]:
   mol = Chem.MolFromSmiles(smiles)
   if mol is None:
     return []
   mol = Chem.AddHs(mol)
-  feats = [atom_features(a) for a in mol.GetAtoms()]
-  x = torch.tensor(feats, dtype=torch.float)
-  src, dst = [], []
-  for bond in mol.GetBonds():
-    i, j = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
-    src += [i, j]
-    dst += [j, i]
-  edge_index = torch.tensor([src, dst], dtype=torch.long)
+  
+  # Ligand Preparation: Add charges
+  try:
+      AllChem.ComputeGasteigerCharges(mol)
+  except:
+      pass
+
+  # Ligand features
+  l_feats = [atom_features(a) for a in mol.GetAtoms()]
+  l_x = torch.tensor(l_feats, dtype=torch.float)
+  
+  # Pocket data
+  p_x, p_pos, p_res_idx = torch.empty(0, 44), torch.empty(0, 3), torch.empty(0, dtype=torch.long)
+  if pocket_data:
+      p_x, p_pos, p_res_idx = pocket_data
+
   data_list = []
   for seed in range(n_conformers):
     params = AllChem.ETKDGv3()
@@ -78,20 +143,32 @@ def smiles_to_pyg(
     if cid < 0:
       cid = AllChem.EmbedMolecule(mol, randomSeed=seed + 42)
     if cid < 0:
-      continue  # Skip molecule if 3D conformer generation completely fails
-    else:
-      AllChem.MMFFOptimizeMolecule(mol, confId=cid)
-      conf = mol.GetConformer(cid)
-      pos = torch.tensor(
-        [list(conf.GetAtomPosition(i)) for i in range(mol.GetNumAtoms())],
-        dtype=torch.float,
-      )
+      continue
+    
+    AllChem.MMFFOptimizeMolecule(mol, confId=cid)
+    conf = mol.GetConformer(cid)
+    l_pos = torch.tensor(
+      [list(conf.GetAtomPosition(i)) for i in range(mol.GetNumAtoms())],
+      dtype=torch.float,
+    )
+    
+    combined_x = torch.cat([l_x, p_x], dim=0)
+    combined_pos = torch.cat([l_pos, p_pos], dim=0)
+    
+    ligand_mask = torch.zeros(combined_x.size(0), dtype=torch.bool)
+    ligand_mask[:l_x.size(0)] = True
+    
     data = Data(
-      x=x, edge_index=edge_index, pos=pos, y=torch.tensor([y], dtype=torch.float)
+      x=combined_x, 
+      pos=combined_pos, 
+      y=torch.tensor([y], dtype=torch.float),
+      ligand_mask=ligand_mask,
+      protein_res_idx=p_res_idx
     )
     data.protein_seq = protein_seq
     data.pdb_id = pdb_id
     data_list.append(data)
+    
   return data_list
 
 
@@ -134,35 +211,18 @@ class LPPDBBind(InMemoryDataset):
       index_col=0,
     )
 
-    # Apply LP-PDBBind recommended cleanup:
-    # - CL1/CL2/CL3: remove complexes with known data quality issues
-    # - covalent: remove covalent binders (different binding physics)
-    cl_col = self.clean_level  # e.g. "CL1"
-    if cl_col in df.columns:
-      df = df[df[cl_col] & ~df["covalent"]]
-      logger.info(
-        "After %s + non-covalent filter: %d complexes",
-        cl_col,
-        len(df),
-      )
+    if self.clean_level in df.columns:
+      df = df[df[self.clean_level] & ~df["covalent"]]
 
     df_split = df[df["new_split"] == self.split].head(
       self.max_samples if self.max_samples > 0 else len(df)
     )
 
-    # Optionally load ESM-2 for precomputing protein embeddings
     esm_fn = None
     if self.precompute_esm:
       try:
-        from models.protein_encoder import (
-          precompute_esm2_embedding,
-        )
-
+        from models.protein_encoder import precompute_esm2_embedding
         esm_fn = precompute_esm2_embedding
-        logger.info(
-          "Precomputing ESM-2 embeddings for %s split",
-          self.split,
-        )
       except Exception as exc:
         logger.warning("ESM-2 precomputation unavailable: %s", exc)
 
@@ -170,14 +230,17 @@ class LPPDBBind(InMemoryDataset):
     for pdb_id, row in df_split.iterrows():
       pdb_id_str = str(pdb_id)
       seq = str(row.get("seq", ""))
+      
+      pocket_data = get_pocket_atoms(pdb_id_str)
+      
       graphs = smiles_to_pyg(
         row["smiles"],
         float(row["value"]),
         seq,
         pdb_id=pdb_id_str,
+        pocket_data=pocket_data
       )
 
-      # Attach ESM-2 embedding if available
       if esm_fn and seq and len(seq) > 5:
         try:
           emb = esm_fn(seq, cache_key=pdb_id_str)

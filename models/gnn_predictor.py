@@ -14,13 +14,12 @@ class GNNPredictor(nn.Module):
   """Binding affinity predictor.
 
   Combines an E(n) Equivariant GNN with multiscale edge features,
-  attention pooling, and optional ESM-2 protein cross-attention.
-  Uses MC Dropout for uncertainty estimation.
+  attention pooling, and protein pocket awareness.
   """
 
   def __init__(
     self,
-    atom_feat_dim: int = 43,
+    atom_feat_dim: int = 44,
     hidden_dim: int = 128,
     n_layers: int = 4,
     edge_dim: int = 16,
@@ -30,9 +29,17 @@ class GNNPredictor(nn.Module):
     super().__init__()
     self.use_protein_encoder = use_protein_encoder
     self.dropout_rate = dropout
+    self.hidden_dim = hidden_dim
 
+    # Projection for atom features (shared by ligand and protein)
     self.input_proj = nn.Sequential(
       nn.Linear(atom_feat_dim, hidden_dim),
+      nn.SiLU(),
+    )
+
+    # Projection for ESM-2 protein embeddings (1280 -> hidden_dim)
+    self.protein_proj = nn.Sequential(
+      nn.Linear(1280, hidden_dim),
       nn.SiLU(),
     )
 
@@ -47,14 +54,6 @@ class GNNPredictor(nn.Module):
         for _ in range(n_layers)
       ]
     )
-
-    self.protein_encoder = None
-    if use_protein_encoder:
-      from models.protein_encoder import ProteinEncoder
-
-      self.protein_encoder = ProteinEncoder(
-        ligand_dim=hidden_dim,
-      )
 
     self.pool = AttentionPool(
       in_dim=hidden_dim,
@@ -71,14 +70,56 @@ class GNNPredictor(nn.Module):
       nn.Linear(hidden_dim // 2, 1),
     )
 
-  def forward(self, x, pos, batch, protein_embs=None):
+  def forward(self, x, pos, batch, ligand_mask=None, protein_res_idx=None, protein_embs=None):
+    """
+    Args:
+        x: Atom features (N_total, 42)
+        pos: Atom coordinates (N_total, 3)
+        batch: Batch assignment (N_total)
+        ligand_mask: Boolean mask for ligand atoms (N_total)
+        protein_res_idx: Residue indices for protein atoms (N_total)
+        protein_embs: List of ESM-2 embeddings [(L_i, 1280)]
+    """
+    # 1. Project base atom features
     h = self.input_proj(x)
+    
+    # 2. Inject ESM-2 embeddings into protein nodes
+    if self.use_protein_encoder and protein_embs is not None and ligand_mask is not None and protein_res_idx is not None:
+        # ligand_mask is True for ligand, False for protein
+        prot_mask = ~ligand_mask
+        if prot_mask.any():
+            # Project all ESM-2 sequences in the batch
+            # protein_embs is a list of [L_i, 1280]
+            unique_batches = torch.unique(batch)
+            for i, b_id in enumerate(unique_batches):
+                # Mask for protein atoms in this specific graph
+                graph_prot_mask = prot_mask & (batch == b_id)
+                if not graph_prot_mask.any() or i >= len(protein_embs):
+                    continue
+                
+                # Get projected ESM-2 for this protein
+                p_emb = self.protein_proj(protein_embs[i].to(h.device)) # (L_i, hidden)
+                
+                # Map residue embeddings to atoms
+                indices = protein_res_idx[graph_prot_mask]
+                # Add the ESM-2 signal to the atom features
+                h[graph_prot_mask] = h[graph_prot_mask] + p_emb[indices]
+
+    # 3. Message Passing on the Unified 3D Graph
     edge_index, edge_attr = self.edge_builder(pos, batch)
     for layer in self.egnn_layers:
       h, pos = layer(h, pos, edge_index, edge_attr)
-    if self.protein_encoder is not None and protein_embs is not None:
-      h = self.protein_encoder(h, protein_embs, batch)
-    graph_emb = self.pool(h, batch)
+      
+    # 4. Global Pooling (only over ligand atoms to focus the affinity prediction)
+    if ligand_mask is not None:
+        # We only pool the ligand atoms for the final score
+        # but the protein atoms helped shape the features during EGNN layers
+        h_lig = h[ligand_mask]
+        batch_lig = batch[ligand_mask]
+        graph_emb = self.pool(h_lig, batch_lig)
+    else:
+        graph_emb = self.pool(h, batch)
+        
     return self.head(graph_emb)
 
   def predict_with_uncertainty(
@@ -86,6 +127,8 @@ class GNNPredictor(nn.Module):
     x,
     pos,
     batch,
+    ligand_mask=None,
+    protein_res_idx=None,
     protein_embs=None,
     n_samples: int = 30,
   ):
@@ -94,7 +137,7 @@ class GNNPredictor(nn.Module):
     preds = []
     with torch.no_grad():
       for _ in range(n_samples):
-        pred = self.forward(x, pos, batch, protein_embs)
+        pred = self.forward(x, pos, batch, ligand_mask, protein_res_idx, protein_embs)
         preds.append(pred)
     preds = torch.stack(preds, dim=0)
     mean = preds.mean(dim=0)
