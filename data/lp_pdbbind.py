@@ -30,9 +30,14 @@ def atom_features(atom: Chem.Atom) -> list[float]:
   p_charge = 0.0
   if atom.HasProp("_GasteigerCharge"):
       try:
-          p_charge = float(atom.GetProp("_GasteigerCharge"))
+          val = atom.GetProp("_GasteigerCharge")
+          # Handle NaN or empty strings
+          if val and val.lower() != "nan":
+              p_charge = float(val)
+          if np.isnan(p_charge) or np.isinf(p_charge):
+              p_charge = 0.0
       except:
-          pass
+          p_charge = 0.0
 
   return (
     one_hot(atom.GetSymbol(), ATOM_TYPES)
