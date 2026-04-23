@@ -104,8 +104,12 @@ class GNNPredictor(nn.Module):
                 if not graph_prot_mask.any() or i >= len(protein_embs):
                     continue
                 
+                # Project all ESM-2 sequences in the batch
+                p_raw = protein_embs[i].to(h.device)
+                p_raw = torch.nan_to_num(p_raw, nan=0.0) # Sanitize protein embs
+                
                 # Get projected ESM-2 for this protein
-                p_emb = self.protein_proj(protein_embs[i].to(h.device)) # (L_i, hidden)
+                p_emb = self.protein_proj(p_raw) # (L_i, hidden)
                 
                 # Map residue embeddings to atoms
                 indices = protein_res_idx[graph_prot_mask]
@@ -133,7 +137,8 @@ class GNNPredictor(nn.Module):
     else:
         graph_emb = self.pool(h, batch, num_graphs=num_graphs)
         
-    return self.head(graph_emb)
+    out = self.head(graph_emb)
+    return torch.clamp(out, min=-20.0, max=20.0) # Clamp final pKa output
 
   def predict_with_uncertainty(
     self,
