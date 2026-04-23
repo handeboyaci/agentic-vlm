@@ -102,6 +102,11 @@ class GNNPredictor(nn.Module):
                 
                 # Map residue embeddings to atoms
                 indices = protein_res_idx[graph_prot_mask]
+                
+                # Safeguard: ESM-2 may truncate to 1024 tokens, ensure indices are in range
+                max_idx = p_emb.shape[0] - 1
+                indices = torch.clamp(indices, 0, max_idx)
+                
                 # Add the ESM-2 signal to the atom features
                 h[graph_prot_mask] = h[graph_prot_mask] + p_emb[indices]
 
