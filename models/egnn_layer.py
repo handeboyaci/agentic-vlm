@@ -40,11 +40,12 @@ class EGNNLayer(nn.Module):
     row, col = edge_index
     
     # 1. Distance with epsilon
-    dist_sq = torch.sum((x[row] - x[col]) ** 2, dim=-1, keepdim=True)
-    dist_sq = dist_sq + 1e-8
+    diff = x[row] - x[col]
+    dist_sq = torch.sum(diff ** 2, dim=-1, keepdim=True)
+    dist = torch.sqrt(dist_sq + 1e-8)
     
-    # 2. Messages
-    edge_input = torch.cat([h[row], h[col], dist_sq, edge_attr], dim=-1)
+    # 2. Messages - Use log1p for distance stability in large protein graphs
+    edge_input = torch.cat([h[row], h[col], torch.log1p(dist_sq), edge_attr], dim=-1)
     m_ij = self.msg_mlp(edge_input)
 
     # 3. Message Aggregation with Normalization
@@ -52,15 +53,16 @@ class EGNNLayer(nn.Module):
     m_i = torch.zeros(h.size(0), self.hidden_dim, device=h.device)
     m_i.index_add_(0, row, m_ij)
     
-    # Optional: Normalize by number of neighbors for stability
+    # Normalize by number of neighbors for stability
     counts = torch.zeros(h.size(0), 1, device=h.device)
     counts.index_add_(0, row, torch.ones_like(dist_sq))
     m_i = m_i / (counts + 1e-8)
 
     # 4. Coordinate Update (Equivariant)
-    # Scale by distance to prevent 'flying' atoms
-    radial = x[row] - x[col]
-    trans = radial * self.coord_mlp(m_ij)
+    # Stability fix: use unit radial vector to prevent explosive updates
+    # and add a small scaling factor (0.1)
+    radial = diff / (dist + 1e-8)
+    trans = radial * self.coord_mlp(m_ij) * 0.1
     x_agg = torch.zeros_like(x)
     x_agg.index_add_(0, row, trans)
     x_agg = x_agg / (counts + 1e-8) # Normalize coordinate push

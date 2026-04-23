@@ -12,9 +12,13 @@ class AttentionPool(nn.Module):
       nn.Linear(in_dim, hidden_dim), nn.SiLU(), nn.Linear(hidden_dim, 1)
     )
 
-  def forward(self, h, batch):
+  def forward(self, h, batch, num_graphs=None):
+    if h.size(0) == 0:
+        # Handle empty input (no nodes to pool)
+        return torch.zeros(num_graphs if num_graphs is not None else 0, h.size(1), device=h.device)
+
     weights = self.gate(h)
-    max_batch = int(batch.max().item()) + 1
+    max_batch = num_graphs if num_graphs is not None else int(batch.max().item()) + 1
     exp_w = torch.exp(weights - weights.max())
     sum_exp = torch.zeros(max_batch, 1, device=h.device)
     sum_exp.index_add_(0, batch, exp_w)

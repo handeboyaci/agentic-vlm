@@ -111,14 +111,15 @@ class GNNPredictor(nn.Module):
       h, pos = layer(h, pos, edge_index, edge_attr)
       
     # 4. Global Pooling (only over ligand atoms to focus the affinity prediction)
+    num_graphs = int(batch.max().item()) + 1
     if ligand_mask is not None:
         # We only pool the ligand atoms for the final score
         # but the protein atoms helped shape the features during EGNN layers
         h_lig = h[ligand_mask]
         batch_lig = batch[ligand_mask]
-        graph_emb = self.pool(h_lig, batch_lig)
+        graph_emb = self.pool(h_lig, batch_lig, num_graphs=num_graphs)
     else:
-        graph_emb = self.pool(h, batch)
+        graph_emb = self.pool(h, batch, num_graphs=num_graphs)
         
     return self.head(graph_emb)
 
