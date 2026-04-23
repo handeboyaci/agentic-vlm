@@ -165,6 +165,7 @@ class LPPDBBind(InMemoryDataset):
     if not os.path.exists(dst): urllib.request.urlretrieve(CSV_URL, dst)
 
   def process(self):
+    print("DEBUG: Using patched data loader (NaN-Charge Fix Active)")
     df = pd.read_csv(os.path.join(self.raw_dir, "LP_PDBBind.csv"), index_col=0)
     if self.clean_level in df.columns: df = df[df[self.clean_level] & ~df["covalent"]]
     df_split = df[df["new_split"] == self.split].head(self.max_samples if self.max_samples > 0 else len(df))
