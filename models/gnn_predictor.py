@@ -70,6 +70,20 @@ class GNNPredictor(nn.Module):
       nn.Dropout(dropout),
       nn.Linear(hidden_dim // 2, 1),
     )
+    
+    # 5. Stabilized initialization
+    self.apply(self._init_weights)
+
+  def _init_weights(self, m):
+    if isinstance(m, nn.Linear):
+      nn.init.xavier_uniform_(m.weight)
+      if m.bias is not None:
+        nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.LayerNorm):
+      nn.init.constant_(m.bias, 0)
+      nn.init.constant_(m.weight, 1.0)
+      # Increase LayerNorm epsilon for stability
+      m.eps = 1e-4
 
   def forward(self, x, pos, batch, ligand_mask=None, protein_res_idx=None, protein_embs=None):
     """

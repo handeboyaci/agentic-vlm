@@ -60,12 +60,13 @@ class EGNNLayer(nn.Module):
     m_i = m_i / (counts + 1e-8)
 
     # 4. Coordinate Update (Equivariant)
-    # Stability fix: use unit radial vector to prevent explosive updates
-    radial = diff / (dist + 1e-8)
+    # Stability fix: "Soften" the radial vector at short distances (dist + 1.0)
+    # This prevents infinite forces when atoms are close.
+    radial = diff / (dist + 1.0)
     coord_weights = self.coord_mlp(m_ij)
     # Clamp coordinate weights to prevent "flying atoms"
     coord_weights = torch.clamp(coord_weights, min=-1.0, max=1.0)
-    trans = radial * coord_weights * 0.1
+    trans = radial * coord_weights * 0.01 # Even smaller coord update
     
     x_agg = torch.zeros_like(x)
     x_agg.index_add_(0, row, trans)
@@ -74,9 +75,10 @@ class EGNNLayer(nn.Module):
     # Clamp coordinates to a reasonable bounding box
     x = torch.clamp(x, min=-500.0, max=500.0)
 
-    # 5. Node Update
+    # 5. Node Update with Residual Scaling (0.2)
     h_input = torch.cat([h, m_i], dim=-1)
-    h = h + torch.clamp(self.node_mlp(h_input), min=-100.0, max=100.0)
+    h_update = torch.clamp(self.node_mlp(h_input), min=-10.0, max=10.0)
+    h = h + 0.2 * h_update # Scale the update to prevent exponential growth
     h = self.node_norm(h)
     
     # Final safety check
