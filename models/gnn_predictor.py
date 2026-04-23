@@ -41,6 +41,7 @@ class GNNPredictor(nn.Module):
     self.protein_proj = nn.Sequential(
       nn.Linear(1280, hidden_dim),
       nn.SiLU(),
+      nn.LayerNorm(hidden_dim), # Normalize projected ESM-2 signals
     )
 
     self.edge_builder = MultiScaleEdgeBuilder(edge_dim=edge_dim)
@@ -80,6 +81,12 @@ class GNNPredictor(nn.Module):
         protein_res_idx: Residue indices for protein atoms (N_total)
         protein_embs: List of ESM-2 embeddings [(L_i, 1280)]
     """
+    # 0. Sanitize inputs
+    x = torch.nan_to_num(x, nan=0.0)
+    pos = torch.nan_to_num(pos, nan=0.0)
+    # Clamp extreme positions (usually errors from RDKit conformer generation)
+    pos = torch.clamp(pos, min=-1000.0, max=1000.0)
+    
     # 1. Project base atom features
     h = self.input_proj(x)
     
