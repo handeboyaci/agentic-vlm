@@ -47,9 +47,10 @@ class EGNNLayer(nn.Module):
     # 2. Messages - Use log1p for distance stability in large protein graphs
     edge_input = torch.cat([h[row], h[col], torch.log1p(dist_sq), edge_attr], dim=-1)
     m_ij = self.msg_mlp(edge_input)
+    # Clamp messages to prevent explosion in high-degree protein nodes
+    m_ij = torch.clamp(m_ij, min=-100.0, max=100.0)
 
     # 3. Message Aggregation with Normalization
-    # We count neighbors to prevent sum-explosion in large protein graphs
     m_i = torch.zeros(h.size(0), self.hidden_dim, device=h.device)
     m_i.index_add_(0, row, m_ij)
     
@@ -60,17 +61,26 @@ class EGNNLayer(nn.Module):
 
     # 4. Coordinate Update (Equivariant)
     # Stability fix: use unit radial vector to prevent explosive updates
-    # and add a small scaling factor (0.1)
     radial = diff / (dist + 1e-8)
-    trans = radial * self.coord_mlp(m_ij) * 0.1
+    coord_weights = self.coord_mlp(m_ij)
+    # Clamp coordinate weights to prevent "flying atoms"
+    coord_weights = torch.clamp(coord_weights, min=-1.0, max=1.0)
+    trans = radial * coord_weights * 0.1
+    
     x_agg = torch.zeros_like(x)
     x_agg.index_add_(0, row, trans)
     x_agg = x_agg / (counts + 1e-8) # Normalize coordinate push
     x = x + x_agg
+    # Clamp coordinates to a reasonable bounding box
+    x = torch.clamp(x, min=-500.0, max=500.0)
 
     # 5. Node Update
     h_input = torch.cat([h, m_i], dim=-1)
-    h = h + self.node_mlp(h_input)
+    h = h + torch.clamp(self.node_mlp(h_input), min=-100.0, max=100.0)
     h = self.node_norm(h)
+    
+    # Final safety check
+    h = torch.nan_to_num(h, nan=0.0)
+    x = torch.nan_to_num(x, nan=0.0)
 
     return h, x
