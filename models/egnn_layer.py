@@ -3,10 +3,7 @@ import torch.nn as nn
 
 
 class EGNNLayer(nn.Module):
-  """E(n) Equivariant Graph Neural Network Layer.
-
-  Implementation matching the saved weights in gnn_predictor.pth.
-  """
+  """E(n) Equivariant Graph Neural Network Layer with Stability Fixes."""
 
   def __init__(self, node_dim, edge_dim, hidden_dim):
     super().__init__()
@@ -14,7 +11,7 @@ class EGNNLayer(nn.Module):
     self.edge_dim = edge_dim
     self.hidden_dim = hidden_dim
 
-    # msg_mlp instead of edge_mlp
+    # msg_mlp
     self.msg_mlp = nn.Sequential(
       nn.Linear(2 * node_dim + 1 + edge_dim, hidden_dim),
       nn.SiLU(),
@@ -29,32 +26,47 @@ class EGNNLayer(nn.Module):
       nn.Linear(hidden_dim, node_dim),
     )
 
-    # coord_mlp
+    # coord_mlp: Add Tanh for coordinate stability
     self.coord_mlp = nn.Sequential(
       nn.Linear(hidden_dim, hidden_dim),
       nn.SiLU(),
       nn.Linear(hidden_dim, 1, bias=False),
+      nn.Tanh() # Prevents explosive coordinate updates
     )
 
-    # Adding node_norm
     self.node_norm = nn.LayerNorm(node_dim)
 
   def forward(self, h, x, edge_index, edge_attr):
     row, col = edge_index
+    
+    # 1. Distance with epsilon
     dist_sq = torch.sum((x[row] - x[col]) ** 2, dim=-1, keepdim=True)
-    # Add epsilon for numerical stability during backprop
     dist_sq = dist_sq + 1e-8
+    
+    # 2. Messages
     edge_input = torch.cat([h[row], h[col], dist_sq, edge_attr], dim=-1)
     m_ij = self.msg_mlp(edge_input)
 
+    # 3. Message Aggregation with Normalization
+    # We count neighbors to prevent sum-explosion in large protein graphs
     m_i = torch.zeros(h.size(0), self.hidden_dim, device=h.device)
     m_i.index_add_(0, row, m_ij)
+    
+    # Optional: Normalize by number of neighbors for stability
+    counts = torch.zeros(h.size(0), 1, device=h.device)
+    counts.index_add_(0, row, torch.ones_like(dist_sq))
+    m_i = m_i / (counts + 1e-8)
 
-    trans = (x[row] - x[col]) * self.coord_mlp(m_ij)
+    # 4. Coordinate Update (Equivariant)
+    # Scale by distance to prevent 'flying' atoms
+    radial = x[row] - x[col]
+    trans = radial * self.coord_mlp(m_ij)
     x_agg = torch.zeros_like(x)
     x_agg.index_add_(0, row, trans)
+    x_agg = x_agg / (counts + 1e-8) # Normalize coordinate push
     x = x + x_agg
 
+    # 5. Node Update
     h_input = torch.cat([h, m_i], dim=-1)
     h = h + self.node_mlp(h_input)
     h = self.node_norm(h)
