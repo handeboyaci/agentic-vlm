@@ -106,6 +106,7 @@ def get_pocket_atoms(pdb_id: str, refined_dir: str = "data/refined-set") -> tupl
 def process_single_complex(pdb_id_str, smiles, value, seq):
     """Worker function for parallel processing."""
     pocket_data = get_pocket_atoms(pdb_id_str)
+    seq_len = len(seq)
     
     # 1. Ligand Prep
     mol = Chem.MolFromSmiles(smiles)
@@ -122,6 +123,9 @@ def process_single_complex(pdb_id_str, smiles, value, seq):
     p_x, p_pos, p_res_idx = torch.empty(0, 44), torch.empty(0, 3), torch.empty(0, dtype=torch.long)
     if pocket_data:
         p_x, p_pos, p_res_idx = pocket_data
+        # CRITICAL FIX: Clamp indices to valid sequence length
+        if seq_len > 0:
+            p_res_idx = torch.clamp(p_res_idx, max=seq_len - 1)
 
     # 3. 3D Conformer
     params = AllChem.ETKDGv3()
