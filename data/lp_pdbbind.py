@@ -103,44 +103,54 @@ def get_pocket_atoms(pdb_id: str, refined_dir: str = "data/refined-set") -> tupl
         torch.tensor(res_indices, dtype=torch.long)
     )
 
-def process_single_complex(pdb_id_str, smiles, value, seq):
-    """Worker function for parallel processing."""
-    pocket_data = get_pocket_atoms(pdb_id_str)
+def process_single_complex(pdb_id_str, smiles, value, seq, refined_dir="data/refined-set"):
+    """Worker function using Crystal Structures from LP-PDBBind."""
+    # 1. Load Pocket (Protein)
+    pocket_data = get_pocket_atoms(pdb_id_str, refined_dir=refined_dir)
+    if pocket_data is None: return [] # Strict: must have crystal pocket
+    p_x, p_pos, p_res_idx = pocket_data
     seq_len = len(seq)
+    if seq_len > 0:
+        p_res_idx = torch.clamp(p_res_idx, max=seq_len - 1)
+
+    # 2. Load Ligand (Crystal)
+    sdf_path = os.path.join(refined_dir, pdb_id_str, f"{pdb_id_str}_ligand.sdf")
+    if not os.path.exists(sdf_path): return [] # Strict: must have crystal ligand
     
-    # 1. Ligand Prep
-    mol = Chem.MolFromSmiles(smiles)
+    # Robust loading: try with sanitization off if it fails
+    suppl = Chem.SDMolSupplier(sdf_path, sanitize=False, removeHs=False)
+    mol = next(suppl, None)
     if mol is None: return []
-    mol = Chem.AddHs(mol)
+    
     try:
+        # Partial sanitization to avoid failing on valence errors
+        # while still getting properties needed for featurization
+        mol.UpdatePropertyCache(strict=False)
+        Chem.SanitizeMol(mol, 
+                        sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_PROPERTIES,
+                        catchErrors=True)
+    except:
+        pass # Continue with what we have
+    
+    # 3. Featurize Ligand
+    try:
+        mol = Chem.AddHs(mol, addCoords=True)
+        # ComputeGasteigerCharges is prone to failing on bad valences
+        # We wrap it to ensure one bad molecule doesn't kill the batch
         AllChem.ComputeGasteigerCharges(mol)
     except:
         pass
+    
     l_feats = [atom_features(a) for a in mol.GetAtoms()]
     l_x = torch.tensor(l_feats, dtype=torch.float)
     
-    # 2. Pocket Data
-    p_x, p_pos, p_res_idx = torch.empty(0, 44), torch.empty(0, 3), torch.empty(0, dtype=torch.long)
-    if pocket_data:
-        p_x, p_pos, p_res_idx = pocket_data
-        # CRITICAL FIX: Clamp indices to valid sequence length
-        if seq_len > 0:
-            p_res_idx = torch.clamp(p_res_idx, max=seq_len - 1)
-
-    # 3. 3D Conformer
-    params = AllChem.ETKDGv3()
-    params.randomSeed = 42
-    cid = AllChem.EmbedMolecule(mol, params)
-    if cid < 0: cid = AllChem.EmbedMolecule(mol, randomSeed=42)
-    if cid < 0: return []
-    
-    AllChem.MMFFOptimizeMolecule(mol, confId=cid)
-    conf = mol.GetConformer(cid)
+    conf = mol.GetConformer()
     l_pos = torch.tensor([list(conf.GetAtomPosition(i)) for i in range(mol.GetNumAtoms())], dtype=torch.float)
     
     # 4. Combine
     combined_x = torch.cat([l_x, p_x], dim=0)
     combined_pos = torch.cat([l_pos, p_pos], dim=0)
+    
     ligand_mask = torch.zeros(combined_x.size(0), dtype=torch.bool)
     ligand_mask[:l_x.size(0)] = True
     
