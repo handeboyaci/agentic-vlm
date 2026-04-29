@@ -27,11 +27,11 @@ def one_hot(val, choices):
   return vec
 
 def atom_features(atom: Chem.Atom) -> list[float]:
+  # 1. Existing properties
   p_charge = 0.0
   if atom.HasProp("_GasteigerCharge"):
       try:
           val = atom.GetProp("_GasteigerCharge")
-          # Handle NaN or empty strings
           if val and val.lower() != "nan":
               p_charge = float(val)
           if np.isnan(p_charge) or np.isinf(p_charge):
@@ -39,8 +39,23 @@ def atom_features(atom: Chem.Atom) -> list[float]:
       except:
           p_charge = 0.0
 
+  # 2. Chemical Identity Flags (New)
+  sym = atom.GetSymbol()
+  is_donor = int(sym in ["N", "O", "S"] and atom.GetTotalNumHs() > 0)
+  is_acceptor = int(sym in ["N", "O", "S"] and atom.GetFormalCharge() <= 0)
+  
+  # Simple hydrophobe: Carbon in a ring OR Carbon with only non-polar neighbors
+  is_hydrophobe = 0
+  if sym == "C":
+      if atom.GetIsAromatic():
+          is_hydrophobe = 1
+      else:
+          neighbors = [a.GetSymbol() for a in atom.GetNeighbors()]
+          if all(n in ["C", "H", "S", "Cl", "Br", "I"] for n in neighbors):
+              is_hydrophobe = 1
+
   return (
-    one_hot(atom.GetSymbol(), ATOM_TYPES)
+    one_hot(sym, ATOM_TYPES)
     + one_hot(atom.GetDegree(), [0, 1, 2, 3, 4, 5])
     + one_hot(
       atom.GetHybridization(),
@@ -52,6 +67,7 @@ def atom_features(atom: Chem.Atom) -> list[float]:
         Chem.rdchem.HybridizationType.SP3D2,
       ],
     )
+    + one_hot(atom.GetTotalNumHs(), [0, 1, 2, 3, 4])
     + one_hot(atom.GetTotalValence(), [0, 1, 2, 3, 4, 5, 6])
     + [
       atom.GetFormalCharge(),
@@ -59,10 +75,12 @@ def atom_features(atom: Chem.Atom) -> list[float]:
       int(atom.GetIsAromatic()),
       int(atom.IsInRing()),
       atom.GetMass() / 100.0,
-      p_charge
+      p_charge,
+      is_donor,
+      is_acceptor,
+      is_hydrophobe
     ]
-    + one_hot(atom.GetTotalNumHs(), [0, 1, 2, 3, 4])
-  )  # 44-dim
+  )  # 47-dim
 
 def get_pocket_atoms(pdb_id: str, refined_dir: str = "data/refined-set") -> tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None:
     pdb_path = os.path.join(refined_dir, pdb_id, f"{pdb_id}_pocket.pdb")
