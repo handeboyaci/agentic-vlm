@@ -12,7 +12,7 @@ from models.gnn_predictor import GNNPredictor
 
 def evaluate_test_set():
   print("Loading test dataset (this will use the cached PyG graphs if available)...")
-  test_dataset = LPPDBBind(root="data/pdbbind_deepchem", split="test")
+  test_dataset = LPPDBBind(root="data/pdbbind_all_atom", split="test")
   test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
   print(f"Loaded {len(test_dataset)} test complexes.")
 

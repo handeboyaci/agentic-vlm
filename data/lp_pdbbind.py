@@ -197,22 +197,51 @@ class LPPDBBind(InMemoryDataset):
     if not os.path.exists(dst): urllib.request.urlretrieve(CSV_URL, dst)
 
   def process(self):
-    print("DEBUG: Using patched data loader (NaN-Charge Fix Active)")
+    print("DEBUG: Using patched data loader (Crystal Structure Mode)")
+
+    # 1. Improved Path Discovery
+    # Look for 'refined-set' in:
+    # A) The parent of the 'raw' directory (e.g. data/refined-set)
+    # B) The current working directory (e.g. data/refined-set)
+    
+    potential_paths = [
+        os.path.abspath(os.path.join(self.root, "..", "refined-set")),
+        os.path.abspath("data/refined-set"),
+        os.path.abspath("refined-set")
+    ]
+    
+    refined_dir = None
+    for p in potential_paths:
+        if os.path.exists(p) and len(os.listdir(p)) > 100:
+            refined_dir = p
+            break
+
+    if refined_dir is None:
+        raise FileNotFoundError(f"CRITICAL: Could not find 'refined-set' folder. Tried checking: {potential_paths}. "
+                                "Please ensure your SDF/PDB files are uploaded to 'data/refined-set/'.")
+    
+    print(f"DEBUG: Found crystal structures at {refined_dir}")
+
     df = pd.read_csv(os.path.join(self.raw_dir, "LP_PDBBind.csv"), index_col=0)
     if self.clean_level in df.columns: df = df[df[self.clean_level] & ~df["covalent"]]
     df_split = df[df["new_split"] == self.split].head(self.max_samples if self.max_samples > 0 else len(df))
 
-    # Step 1: Parallel RDKit/PDB Processing
+    # Step 2: Parallel RDKit/PDB Processing
     print(f"Processing {len(df_split)} complexes for {self.split} split using all CPU cores...")
     results = Parallel(n_jobs=-1)(
-        delayed(process_single_complex)(str(pdb_id), row["smiles"], float(row["value"]), str(row.get("seq", "")))
+        delayed(process_single_complex)(str(pdb_id), row["smiles"], float(row["value"]), str(row.get("seq", "")), refined_dir=refined_dir)
         for pdb_id, row in tqdm(df_split.iterrows(), total=len(df_split))
     )
-    
+
     data_list = []
     for r in results: data_list.extend(r)
 
-    # Step 2: Sequential ESM-2 Processing (ESM-2 must stay on GPU/main thread)
+    if len(data_list) == 0:
+        raise ValueError(f"CRITICAL: Processed 0 complexes! Checked {len(df_split)} items in {refined_dir}. "
+                         "Are you sure the PDB/SDF files are in that folder?")
+
+    # Step 3: Sequential ESM-2 Processing
+    # (ESM-2 must stay on GPU/main thread)
     if self.precompute_esm:
       try:
         from models.protein_encoder import precompute_esm2_embedding
