@@ -109,8 +109,14 @@ class GNNPredictor(nn.Module):
                     res_indices = actual_res_idx[prev_prot_atoms : prev_prot_atoms + graph_prot_atoms]
                     
                     p_emb = self.protein_proj(protein_embs[i].to(h.device))
-                    indices = torch.clamp(res_indices, 0, p_emb.size(0)-1)
-                    h[graph_prot_mask] = h[graph_prot_mask] + p_emb[indices]
+                    
+                    if p_emb.dim() == 1:
+                        # Global embedding: add same vector to all protein nodes in graph
+                        h[graph_prot_mask] = h[graph_prot_mask] + p_emb.unsqueeze(0)
+                    else:
+                        # Per-residue embedding: index by residue
+                        indices = torch.clamp(res_indices, 0, p_emb.size(0)-1)
+                        h[graph_prot_mask] = h[graph_prot_mask] + p_emb[indices]
 
         # D. STAGE 3: GLOBAL REASONING (Transformer)
         unique_batches = torch.unique(batch)
