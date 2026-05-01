@@ -169,11 +169,16 @@ def process_single_complex(pdb_id_str, smiles, value, seq, refined_dir="data/ref
     combined_x = torch.cat([l_x, p_x], dim=0)
     combined_pos = torch.cat([l_pos, p_pos], dim=0)
     
+    # Pad protein_res_idx so it has the same length as combined_x
+    # This ensures PyG batches it correctly as a node-level attribute
+    full_res_idx = torch.zeros(combined_x.size(0), dtype=torch.long)
+    full_res_idx[l_x.size(0):] = p_res_idx
+    
     ligand_mask = torch.zeros(combined_x.size(0), dtype=torch.bool)
     ligand_mask[:l_x.size(0)] = True
     
     data = Data(x=combined_x, pos=combined_pos, y=torch.tensor([value], dtype=torch.float),
-                ligand_mask=ligand_mask, protein_res_idx=p_res_idx)
+                ligand_mask=ligand_mask, protein_res_idx=full_res_idx)
     data.protein_seq = seq
     data.pdb_id = pdb_id_str
     return [data]
