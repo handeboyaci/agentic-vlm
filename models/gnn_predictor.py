@@ -83,19 +83,33 @@ class GNNPredictor(nn.Module):
 
         # 2. Add the "Fresh" ESM-2 Protein context
         if self.use_protein_encoder and protein_embs is not None and ligand_mask is not None:
-            # Check if protein_res_idx is correctly batched
-            if protein_res_idx.size(0) != batch.size(0):
-                print(f"DEBUG: Shape mismatch! protein_res_idx: {protein_res_idx.shape}, batch: {batch.shape}. skipping protein context for this batch.")
+            prot_mask = ~ligand_mask
+            
+            # Robust indexing: Handle both padded and un-padded protein_res_idx
+            if protein_res_idx.size(0) == prot_mask.sum():
+                # Data loader only provided protein atoms
+                actual_res_idx = protein_res_idx
+            elif protein_res_idx.size(0) == batch.size(0):
+                # Data loader provided all atoms (padded)
+                actual_res_idx = protein_res_idx[prot_mask]
             else:
-                prot_mask = ~ligand_mask
+                actual_res_idx = None
+                print(f"DEBUG: Unexpected protein_res_idx shape {protein_res_idx.shape}")
+
+            if actual_res_idx is not None:
                 unique_batches = torch.unique(batch)
                 for i, b_id in enumerate(unique_batches):
                     graph_prot_mask = prot_mask & (batch == b_id)
                     if not graph_prot_mask.any() or i >= len(protein_embs): continue
                     
+                    # Get the subset of actual_res_idx that corresponds to this graph
+                    # We count how many protein atoms appeared in previous graphs
+                    prev_prot_atoms = prot_mask[:(batch < b_id).sum() if b_id > 0 else 0].sum()
+                    graph_prot_atoms = graph_prot_mask.sum()
+                    res_indices = actual_res_idx[prev_prot_atoms : prev_prot_atoms + graph_prot_atoms]
+                    
                     p_emb = self.protein_proj(protein_embs[i].to(h.device))
-                    # Indices for this specific graph's protein atoms
-                    indices = torch.clamp(protein_res_idx[graph_prot_mask], 0, p_emb.size(0)-1)
+                    indices = torch.clamp(res_indices, 0, p_emb.size(0)-1)
                     h[graph_prot_mask] = h[graph_prot_mask] + p_emb[indices]
 
         # D. STAGE 3: GLOBAL REASONING (Transformer)

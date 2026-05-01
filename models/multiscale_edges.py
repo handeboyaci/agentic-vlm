@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch_geometric.nn import radius_graph
 
 
 class MultiScaleEdgeBuilder(nn.Module):
@@ -18,30 +19,13 @@ class MultiScaleEdgeBuilder(nn.Module):
     self.register_buffer("width", torch.tensor(width))
 
   def forward(self, pos, batch):
-    num_nodes = pos.size(0)
+    # Sparse radius graph: much more memory efficient than N x N
+    edge_index = radius_graph(pos, r=self.cutoff, batch=batch, loop=False)
+    row, col = edge_index[0], edge_index[1]
 
-    # Build pairwise indices efficiently with cutoff radius
-    row_all = torch.arange(num_nodes, device=pos.device)
-    col_all = torch.arange(num_nodes, device=pos.device)
-    row = row_all.repeat_interleave(num_nodes)
-    col = col_all.repeat(num_nodes)
-
-    # Remove self-loops
-    mask = row != col
-    row, col = row[mask], col[mask]
-
-    # Keep only edges within same graph
-    batch_mask = batch[row] == batch[col]
-    row, col = row[batch_mask], col[batch_mask]
-
-    # Compute distances and apply cutoff
+    # Compute distances for sparse edges
     diff = pos[row] - pos[col]
     dist = torch.sqrt(torch.sum(diff**2, dim=-1) + 1e-10)
-    cutoff_mask = dist < self.cutoff
-    row, col = row[cutoff_mask], col[cutoff_mask]
-    dist = dist[cutoff_mask]
-
-    edge_index = torch.stack([row, col], dim=0)
 
     # RBF expansion: Gaussian basis functions
     # Shape: [num_edges, num_rbf]
