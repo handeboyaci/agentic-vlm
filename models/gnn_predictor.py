@@ -83,15 +83,20 @@ class GNNPredictor(nn.Module):
 
         # 2. Add the "Fresh" ESM-2 Protein context
         if self.use_protein_encoder and protein_embs is not None and ligand_mask is not None:
-            prot_mask = ~ligand_mask
-            unique_batches = torch.unique(batch)
-            for i, b_id in enumerate(unique_batches):
-                graph_prot_mask = prot_mask & (batch == b_id)
-                if not graph_prot_mask.any() or i >= len(protein_embs): continue
-                
-                p_emb = self.protein_proj(protein_embs[i].to(h.device))
-                indices = torch.clamp(protein_res_idx[graph_prot_mask], 0, p_emb.size(0)-1)
-                h[graph_prot_mask] = h[graph_prot_mask] + p_emb[indices]
+            # Check if protein_res_idx is correctly batched
+            if protein_res_idx.size(0) != batch.size(0):
+                print(f"DEBUG: Shape mismatch! protein_res_idx: {protein_res_idx.shape}, batch: {batch.shape}. skipping protein context for this batch.")
+            else:
+                prot_mask = ~ligand_mask
+                unique_batches = torch.unique(batch)
+                for i, b_id in enumerate(unique_batches):
+                    graph_prot_mask = prot_mask & (batch == b_id)
+                    if not graph_prot_mask.any() or i >= len(protein_embs): continue
+                    
+                    p_emb = self.protein_proj(protein_embs[i].to(h.device))
+                    # Indices for this specific graph's protein atoms
+                    indices = torch.clamp(protein_res_idx[graph_prot_mask], 0, p_emb.size(0)-1)
+                    h[graph_prot_mask] = h[graph_prot_mask] + p_emb[indices]
 
         # D. STAGE 3: GLOBAL REASONING (Transformer)
         unique_batches = torch.unique(batch)
