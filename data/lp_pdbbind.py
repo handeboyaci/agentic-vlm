@@ -121,6 +121,17 @@ def get_pocket_atoms(pdb_id: str, refined_dir: str = "data/refined-set") -> tupl
         torch.tensor(res_indices, dtype=torch.long)
     )
 
+class LPPDBBindData(Data):
+    def __inc__(self, key, value, *args, **kwargs):
+        if key == 'protein_res_idx':
+            return 0
+        return super().__inc__(key, value, *args, **kwargs)
+
+    def __cat_dim__(self, key, value, *args, **kwargs):
+        if key in ['x', 'pos', 'ligand_mask', 'protein_res_idx']:
+            return 0
+        return super().__cat_dim__(key, value, *args, **kwargs)
+
 def process_single_complex(pdb_id_str, smiles, value, seq, refined_dir="data/refined-set"):
     """Worker function using Crystal Structures from LP-PDBBind."""
     # 1. Load Pocket (Protein)
@@ -177,7 +188,7 @@ def process_single_complex(pdb_id_str, smiles, value, seq, refined_dir="data/ref
     ligand_mask = torch.zeros(combined_x.size(0), dtype=torch.bool)
     ligand_mask[:l_x.size(0)] = True
     
-    data = Data(x=combined_x, pos=combined_pos, y=torch.tensor([value], dtype=torch.float),
+    data = LPPDBBindData(x=combined_x, pos=combined_pos, y=torch.tensor([value], dtype=torch.float),
                 ligand_mask=ligand_mask, protein_res_idx=full_res_idx)
     data.protein_seq = seq
     data.pdb_id = pdb_id_str
